@@ -1,0 +1,66 @@
+{
+    "capability_success_rates": {
+        "reasoning": 0.8,
+        "memory": 0.75,
+        "learning": 0.7,
+        "creativity": 0.65,
+        "communication": 0.85,
+        "problem_solving": 0.75
+    },
+    "capability_usage_counts": {
+        "reasoning": 0,
+        "memory": 0,
+        "learning": 0,
+        "creativity": 0,
+        "communication": 0,
+        "problem_solving": 0
+    },
+    "recent_errors": [],
+    "recent_warnings": [],
+    "system_metrics": {
+        "memory_usage_mb": 193.23,
+        "cpu_usage_percent": 0.0
+    },
+    "recent_interactions": [
+        {
+            "id": 4,
+            "instruction": "General Chat",
+            "input": "项目文件散乱",
+            "output": "看来你是需要更简单直接的整理方式对吧😉 你不用特意找完整的文件夹路径，直接告诉我散乱项目文件的大概位置就行，比如「桌面上所有零散的项目文件」「D盘叫“未整理项目”的文件夹」，我直接给你生成能一键运行的整理指令，全程会先自动备份原文件，完全不用担心数据丢失。",
+            "timestamp": "2026-02-28 10:32:57",
+            "rating": 0,
+            "feedback": null,
+            "model_used": "doubao-seed-2-0-pro-260215"
+        },
+        {
+            "id": 3,
+            "instruction": "General Chat",
+            "input": "项目文件散乱",
+            "output": "如果你需要全自动安全整理的话，直接替换下面指令里的文件夹路径就行：\n```\n/agent 整理【你的项目文件夹路径，比如C:\\Users\\xxx\\Desktop\\未整理项目】下的散乱文件：1. 先自动备份原文件到同目录的backup文件夹避免误删；2. 按「项目归属+文件类型（代码、文档、媒体资源、配置文件、构建输出、压缩包/安装包）」分类归档；3. 重复文件单独标注，给出建议确认后再处理\n```\n路径获取小技巧：Windows下打开对应文件夹，点击顶部地址栏就能直接复制完整路径；Mac右键文件夹选「显示简介」，复制「位置」栏的内容即可。\n如果有特殊分类规则（比如按创建时间归档、只整理特定后缀文件），直接补充在指令里即可。",
+            "timestamp": "2026-02-28 10:32:35",
+            "rating": 0,
+            "feedback": null,
+            "model_used": "doubao-seed-2-0-pro-260215"
+        },
+        {
+            "id": 2,
+            "instruction": "General Chat",
+            "input": "项目文件散乱",
+            "output": "我可以帮你自动整理散乱的项目文件，推荐直接调用智能代理完成：\n```\n/agent 整理[你的项目文件夹实际路径，比如D:\\projects]下的散乱文件，按文件类型（代码、文档、资源、配置、输出产物等）分类归档，重复文件标注提示，避免误删\n```\n如果有特殊整理规则（比如按创建时间/项目归属分类），直接加在上述任务描述里即可。\n\n如果需要先手动整理，也可以参考通用分类规则：\n1. 顶层按单个项目分独立文件夹\n2. 单个项目内固定建`code/代码`、`doc/文档`、`assets/资源`、`config/配置`、`output/输出产物`、`deprecated/历史归档`几个子目录，对应放置文件即可。",
+            "timestamp": "2026-02-28 10:31:50",
+            "rating": 0,
+            "feedback": null,
+            "model_used": "doubao-seed-2-0-pro-260215"
+        },
+        {
+            "id": 1,
+            "instruction": "General Chat",
+            "input": "你好",
+            "output": "你好呀😃 我是你的本地AI助手OpenClaw，你可以让我帮你处理本地电脑相关的需求，如果是复杂任务建议使用`/agent <任务描述>`的模式调用智能代理完成哦~",
+            "timestamp": "2026-02-28 10:21:41",
+            "rating": 0,
+            "feedback": null,
+            "model_used": "doubao-seed-2-0-pro-260215"
+        }
+    ]
+}

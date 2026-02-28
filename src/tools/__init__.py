@@ -9,6 +9,12 @@ from .web_tools import get_weather, web_search
 from .repository_tools import list_github_repos, list_gitee_repos, list_all_repos, clone_repo, get_repo_info
 from .video_tools import generate_video_from_text, generate_video_from_image, generate_video_between_images
 from .ai_assistant_tools import analyze_code, search_code, get_project_overview, analyze_change_impact, get_code_summary
+# New tools
+from .directory_tools import mkdir, rmdir, get_dir_info, list_dir_tree, copy_dir
+from .file_utils_tools import delete_file, get_file_info, copy_file, rename_file, compare_files
+from .git_tools import git_status, git_diff, git_add, git_commit, git_log, git_branch
+from .json_yaml_tools import read_json, write_json, update_json, read_yaml, write_yaml, validate_json
+from .text_processing_tools import find_in_files, replace_in_files, count_lines, extract_strings
 
 class Tools:
     """Collection of tools for the AI agent to interact with the local system."""
@@ -45,6 +51,37 @@ class Tools:
     generate_video_from_text = staticmethod(generate_video_from_text)
     generate_video_from_image = staticmethod(generate_video_from_image)
     generate_video_between_images = staticmethod(generate_video_between_images)
+    # Directory tools
+    mkdir = staticmethod(mkdir)
+    rmdir = staticmethod(rmdir)
+    get_dir_info = staticmethod(get_dir_info)
+    list_dir_tree = staticmethod(list_dir_tree)
+    copy_dir = staticmethod(copy_dir)
+    # File utils tools
+    delete_file = staticmethod(delete_file)
+    get_file_info = staticmethod(get_file_info)
+    copy_file = staticmethod(copy_file)
+    rename_file = staticmethod(rename_file)
+    compare_files = staticmethod(compare_files)
+    # Git tools
+    git_status = staticmethod(git_status)
+    git_diff = staticmethod(git_diff)
+    git_add = staticmethod(git_add)
+    git_commit = staticmethod(git_commit)
+    git_log = staticmethod(git_log)
+    git_branch = staticmethod(git_branch)
+    # JSON/YAML tools
+    read_json = staticmethod(read_json)
+    write_json = staticmethod(write_json)
+    update_json = staticmethod(update_json)
+    read_yaml = staticmethod(read_yaml)
+    write_yaml = staticmethod(write_yaml)
+    validate_json = staticmethod(validate_json)
+    # Text processing tools
+    find_in_files = staticmethod(find_in_files)
+    replace_in_files = staticmethod(replace_in_files)
+    count_lines = staticmethod(count_lines)
+    extract_strings = staticmethod(extract_strings)
 
     @classmethod
     def get_tool_descriptions(cls) -> str:
@@ -85,6 +122,37 @@ class Tools:
             "26. get_project_overview(): Get project statistics: file count, lines of code, function/class counts, directory structure.",
             "27. analyze_change_impact(file_path, change_description): Analyze the impact of a code change - shows which files depend on the modified file.",
             "28. get_code_summary(file_path, max_lines=50): Get a summary of a code file: imports, definitions, and first 50 lines of actual code.",
+            # Directory tools
+            "29. mkdir(directory_path, exist_ok=True, parents=True): Create a directory.",
+            "30. rmdir(directory_path, recursive=False): Remove a directory.",
+            "31. get_dir_info(directory_path='.'): Get detailed directory information: file count, size, file type distribution.",
+            "32. list_dir_tree(directory_path='.', max_depth=3): Display directory structure as a tree.",
+            "33. copy_dir(src, dst, overwrite=False): Copy an entire directory.",
+            # File utils tools
+            "34. delete_file(file_path, safe_mode=True): Delete a file (safe mode protects core files).",
+            "35. get_file_info(file_path): Get detailed file information: size, timestamps, MD5 hash.",
+            "36. copy_file(src, dst, overwrite=False): Copy a file.",
+            "37. rename_file(src, dst, overwrite=False): Rename a file.",
+            "38. compare_files(file1, file2): Compare two files and show differences.",
+            # Git tools
+            "39. git_status(repo_path='.'): Get Git repository status.",
+            "40. git_diff(file_path=None, repo_path='.', cached=False): Show Git diff.",
+            "41. git_add(files, repo_path='.'): Add files to Git staging area.",
+            "42. git_commit(message, repo_path='.', allow_empty=False): Commit staged changes.",
+            "43. git_log(max_count=10, repo_path='.', oneline=True): Show commit history.",
+            "44. git_branch(repo_path='.'): List Git branches.",
+            # JSON/YAML tools
+            "45. read_json(file_path): Read and display JSON file content.",
+            "46. write_json(file_path, data, overwrite=False): Write data to JSON file.",
+            "47. update_json(file_path, key_path, value, create_if_missing=False): Update a specific value in JSON file.",
+            "48. read_yaml(file_path): Read and display YAML file content.",
+            "49. write_yaml(file_path, data, overwrite=False): Write data to YAML file.",
+            "50. validate_json(file_path): Validate JSON file format.",
+            # Text processing tools
+            "51. find_in_files(pattern, directory='.', file_pattern='*.py', use_regex=False): Search for text in multiple files.",
+            "52. replace_in_files(old_text, new_text, directory='.', file_pattern='*.py', preview=True): Replace text in multiple files.",
+            "53. count_lines(directory='.', file_pattern='*.py'): Count code lines in files.",
+            "54. extract_strings(file_path, min_length=5): Extract string literals from code files.",
         ]
         
         # 2. Dynamic Skills from src.tools.skills
@@ -93,7 +161,7 @@ class Tools:
         
         if skill_functions:
             descriptions.append("\nCustom Skills:")
-            for i, func_name in enumerate(skill_functions, 12):
+            for i, func_name in enumerate(skill_functions, 55):
                 func = getattr(skills, func_name)
                 doc = inspect.getdoc(func) or "No description provided."
                 # Get signature for accurate args

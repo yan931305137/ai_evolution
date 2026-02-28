@@ -610,7 +610,8 @@ def deployment_rollback_manager(
 
 # Skill: 全流程自主迭代调度工具，串联安全校验、灰度测试、上线回滚全环节，实现非底层功能模块的完全自动化迭代上线，全程无人工介入，保障100%上线准确率
 from typing import Tuple, Dict, List
-from src.tools.skills import code_security_verification, grayscale_test_executor, deployment_rollback_manager
+# Import from this module directly (avoiding circular import)
+# from src.tools.skills import code_security_verification, grayscale_test_executor, deployment_rollback_manager
 
 def autonomous_iteration_pipeline(
     target_module_path: str,
