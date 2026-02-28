@@ -11,7 +11,8 @@ from datetime import datetime
 # 1. 定义规则常量：存储路径映射表
 STORAGE_PATH_RULES = {
     "code_skill": ["./skills/"],
-    "code_core": ["./core/"],
+    "code_tool": ["./src/tools/"],  # 工具代码
+    "code_core": ["./core/", "./src/core/", "./src/agents/", "./src/business/", "./src/storage/", "./src/utils/"],
     "code_script": ["./scripts/"],
     "code_test": ["./tests/"],
     "data_system": ["./data/"],
@@ -22,7 +23,7 @@ STORAGE_PATH_RULES = {
 }
 
 # 2. 定义规则常量：禁止删除的资源路径前缀
-FORBID_DELETE_PATH_PREFIXES = ["./core/", "./config/", "./data/*.db", "./skills/", "./README.md", "./requirements.txt", "./pytest.ini"]
+FORBID_DELETE_PATH_PREFIXES = ["./core/", "./config/", "./data/*.db", "./skills/", "./src/", "./README.md", "./requirements.txt", "./pytest.ini"]
 
 # 3. 定义规则常量：合法临时资源路径/类型
 LEGAL_TEMP_RESOURCE_FLAGS = ["./tmp/", ".tmp", ".cache", ".pyc", "__pycache__", ".pytest_cache"]

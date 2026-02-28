@@ -3,8 +3,16 @@
     "code_skill": [
       "./skills/"
     ],
+    "code_tool": [
+      "./src/tools/"
+    ],
     "code_core": [
-      "./core/"
+      "./core/",
+      "./src/core/",
+      "./src/agents/",
+      "./src/business/",
+      "./src/storage/",
+      "./src/utils/"
     ],
     "code_script": [
       "./scripts/"
@@ -33,6 +41,7 @@
     "./config/",
     "./data/*.db",
     "./skills/",
+    "./src/",
     "./README.md",
     "./requirements.txt",
     "./pytest.ini"

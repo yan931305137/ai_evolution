@@ -13,6 +13,19 @@
       "related_files": [],
       "auto_delete": false,
       "last_verified_at": "2026-02-28T20:51:20.621995"
+    },
+    "doc_8cd9ba93": {
+      "doc_id": "doc_8cd9ba93",
+      "path": "./docs/skill与工具目录合规存放规范.md",
+      "title": "Skill目录与工具目录合规存放规范",
+      "task_id": "task_2a0f4828",
+      "created_at": "2026-02-28T20:58:51.921616",
+      "ttl_days": 30,
+      "status": "active",
+      "doc_type": "standard",
+      "related_files": [],
+      "auto_delete": false,
+      "last_verified_at": "2026-02-28T20:58:51.921618"
     }
   }
 }
