@@ -34,9 +34,18 @@ class LLMClient:
             api_key: API Key
             base_url: Base URL
             model_name: 模型名称
-            provider: 服务提供商 ("coze", "ark", "brain"), 默认为 "coze"
-            **kwargs: 额外参数（Brain模式下使用: start_as_infant, identity）
+            provider: 服务提供商 ("coze", "ark", "brain"), 默认从配置文件读取
+            **kwargs: 额外参数
         """
+        # 尝试从配置文件读取
+        try:
+            from src.utils.config import cfg
+            if not provider:
+                provider = cfg.llm_provider
+            self._config = cfg.llm_config
+        except Exception:
+            self._config = {}
+        
         self.provider = provider or os.getenv("LLM_PROVIDER", "coze")
         
         # Brain模式：使用人类级大脑
@@ -45,16 +54,16 @@ class LLMClient:
             return
         
         if self.provider == "ark":
-            self.api_key = api_key or os.getenv("ARK_API_KEY")
-            self.base_url = base_url or os.getenv("ARK_BASE_URL", "https://ark.cn-beijing.volces.com/api/v3")
-            self.model_name = model_name or os.getenv("ARK_MODEL", "doubao-seed-2-0-pro-260215")
-            extra_body = {}  # Ark usually doesn't need specific extra_body like Coze's thinking
+            self.api_key = api_key or os.getenv("ARK_API_KEY") or self._config.get("api_key")
+            self.base_url = base_url or os.getenv("ARK_BASE_URL") or self._config.get("base_url", "https://ark.cn-beijing.volces.com/api/v3")
+            self.model_name = model_name or os.getenv("ARK_MODEL") or self._config.get("model_name", "doubao-seed-2-0-pro-260215")
+            extra_body = {}
             default_headers_config = None
         else:
             # Default to Coze
-            self.api_key = api_key or os.getenv("COZE_WORKLOAD_IDENTITY_API_KEY")
-            self.base_url = base_url or os.getenv("COZE_INTEGRATION_MODEL_BASE_URL")
-            self.model_name = model_name or os.getenv("COZE_MODEL_NAME", "doubao-seed-2-0-pro-260215")
+            self.api_key = api_key or os.getenv("COZE_WORKLOAD_IDENTITY_API_KEY") or self._config.get("api_key")
+            self.base_url = base_url or os.getenv("COZE_INTEGRATION_MODEL_BASE_URL") or self._config.get("base_url")
+            self.model_name = model_name or os.getenv("COZE_MODEL_NAME") or self._config.get("model_name", "doubao-seed-2-0-pro-260215")
             extra_body = {"thinking": {"type": "enabled"}}
             default_headers_config = default_headers(new_context(method="chat")) if COZE_UTILS_AVAILABLE else None
         
@@ -69,9 +78,9 @@ class LLMClient:
             model=self.model_name,
             api_key=self.api_key,
             base_url=self.base_url,
-            temperature=0.7,
+            temperature=self._config.get("temperature", 0.7),
             streaming=True,
-            timeout=600,
+            timeout=self._config.get("timeout", 600),
             extra_body=extra_body,
             default_headers=default_headers_config
         )
@@ -83,9 +92,22 @@ class LLMClient:
         """初始化Brain模式"""
         try:
             from src.utils.brain_llm_adapter import BrainLLMClient
-            self._brain_client = BrainLLMClient(**kwargs)
+            
+            # 从配置文件获取Brain设置
+            brain_config = self._config.get("brain", {})
+            
+            # 合并kwargs和配置文件
+            init_params = {
+                "start_as_infant": brain_config.get("start_as_infant", False),
+                **kwargs
+            }
+            
+            self._brain_client = BrainLLMClient(**init_params)
             self.model_name = self._brain_client.model_name
+            
             logging.info(f"🧠 LLMClient已切换到Brain模式 | 模型: {self.model_name}")
+            logging.info(f"   配置来源: config.yaml | 婴儿模式: {init_params['start_as_infant']}")
+            
         except ImportError as e:
             logging.error(f"Brain模块导入失败: {e}")
             raise RuntimeError("无法初始化Brain模式，请确保src/brain和src/utils/brain_llm_adapter.py存在")

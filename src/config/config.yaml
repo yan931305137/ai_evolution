@@ -1,13 +1,52 @@
 # OpenClaw-Local Configuration
 
-# LLM Configuration
+# ============================================
+# LLM Configuration - 大语言模型配置
+# ============================================
 llm:
+  # 提供商选择: coze | ark | brain
+  # coze: Coze平台（默认）
+  # ark: 火山引擎Ark
+  # brain: 人类级大脑（本地AI架构）
+  provider: brain
+  
+  # ============================================
+  # Coze/Ark 通用配置
+  # ============================================
   api_key: ""
   base_url: ""
   model_name: doubao-seed-2-0-pro-260215
   temperature: 0.7
   timeout: 600
   max_tokens: 4096
+  
+  # ============================================
+  # Brain（人类级大脑）专用配置
+  # ============================================
+  brain:
+    # 发育起点
+    start_as_infant: false  # true=从婴儿开始, false=直接使用成年大脑
+    
+    # 身份配置（可选）
+    identity:
+      name: "OpenClaw Brain"
+      values: ["求知", "助人", "成长"]
+      goals: ["理解世界", "帮助用户", "持续进化"]
+    
+    # 认知能力开关
+    capabilities:
+      embodied: true      # 具身认知
+      emotion: true       # 情感系统
+      developmental: true # 发育学习
+      social: true        # 社会认知
+      homeostasis: true   # 内稳态驱动
+      metacognition: true # 元认知
+    
+    # 情感响应模式
+    emotional_mode: balanced  # balanced|empathetic|analytical
+    
+    # 发育速度（如果start_as_infant=true）
+    growth_rate: normal  # slow|normal|fast
 
 # Database Configuration
 database:

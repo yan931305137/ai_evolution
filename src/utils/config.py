@@ -34,8 +34,13 @@ class Config:
             path = root_path / config_path
             
         if not path.exists():
-            raise FileNotFoundError(f"Configuration file not found at {path}")
+            # Try with src/ prefix
+            root_path = Path(__file__).parent.parent
+            path = root_path / "src" / config_path
             
+        if not path.exists():
+            raise FileNotFoundError(f"Configuration file not found at {path}")
+        
         with open(path, "r", encoding="utf-8") as f:
             self._config = yaml.safe_load(f)
 
@@ -51,6 +56,11 @@ class Config:
             if os.getenv("LLM_MODEL_NAME"):
                 if "llm" not in self._config: self._config["llm"] = {}
                 self._config["llm"]["model_name"] = os.getenv("LLM_MODEL_NAME")
+            
+            # 环境变量覆盖provider设置（如果需要强制覆盖配置文件）
+            if os.getenv("LLM_PROVIDER"):
+                if "llm" not in self._config: self._config["llm"] = {}
+                self._config["llm"]["provider"] = os.getenv("LLM_PROVIDER")
 
             self._loaded = True
             
@@ -72,6 +82,16 @@ class Config:
     @property
     def llm_config(self) -> Dict[str, Any]:
         return self.get("llm", {})
+    
+    @property
+    def llm_provider(self) -> str:
+        """获取LLM提供商"""
+        return self.get("llm.provider", "coze")
+    
+    @property
+    def brain_config(self) -> Dict[str, Any]:
+        """获取Brain配置"""
+        return self.get("llm.brain", {})
 
     @property
     def db_config(self) -> Dict[str, Any]:
