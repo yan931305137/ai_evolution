@@ -138,20 +138,30 @@ class BrainLLMClient:
         reflection = result.get("reflection", {})
         dominant_drive = result.get("dominant_drive")
         
-        # 主响应内容
-        if action == "respond":
-            # 根据情感状态调整响应语气
-            valence = emotional_state.valence if emotional_state else 0
-            if valence > 0.5:
-                tone = "（带着积极的态度）"
-            elif valence < -0.5:
-                tone = "（略显担忧地）"
-            else:
-                tone = ""
-            
-            content = f"{tone}{reasoning}" if reasoning else "我理解了，请继续。"
+        # 提取用户输入
+        user_message = ""
+        for msg in reversed(original_messages):
+            if msg.get("role") == "user":
+                user_message = msg.get("content", "")
+                break
+        
+        # 生成自然语言响应（而不是决策标记）
+        if action == "respond" or action == "proceed":
+            # 基于用户输入和Brain状态生成回复
+            content = self._generate_natural_response(
+                user_input=user_message,
+                emotional_state=emotional_state,
+                reasoning=reasoning,
+                dominant_drive=dominant_drive
+            )
+        elif action == "wait":
+            content = "我在思考，请稍等..."
+        elif action == "explore":
+            content = "这是个有趣的话题，我想了解更多。你能详细说说吗？"
+        elif action == "avoid":
+            content = "这个话题让我有些不安，我们换个话题吧。"
         else:
-            content = f"[{action}] {reasoning}"
+            content = f"[{action}] {reasoning}" if reasoning else f"[{action}]"
         
         # 构建思考过程（类似于reasoning_content）
         thinking_parts = []
@@ -170,6 +180,64 @@ class BrainLLMClient:
             content=content,
             reasoning_content=reasoning_content
         )
+    
+    def _generate_natural_response(
+        self, 
+        user_input: str,
+        emotional_state: Any,
+        reasoning: str,
+        dominant_drive: Any
+    ) -> str:
+        """
+        基于Brain状态生成自然语言响应
+        
+        这是一个简化的实现，实际可以接入真正的语言模型
+        """
+        if not user_input:
+            return "你好！我是OpenClaw Brain，很高兴和你交流。"
+        
+        # 根据情感状态调整语气
+        valence = emotional_state.valence if emotional_state else 0
+        
+        if valence > 0.5:
+            prefix = "很高兴和你聊天！"
+        elif valence < -0.5:
+            prefix = "嗯..."
+        else:
+            prefix = ""
+        
+        # 基于用户输入长度和类型生成回复
+        user_lower = user_input.lower()
+        
+        # 问候语
+        if any(word in user_lower for word in ["你好", "嗨", "hello", "hi"]):
+            if prefix:
+                return f"{prefix}你好呀！我是OpenClaw Brain，有什么我可以帮你的吗？"
+            return "你好！我是OpenClaw Brain，很高兴见到你。"
+        
+        # 询问身份
+        if any(word in user_lower for word in ["你是谁", "你是什么", "介绍"]):
+            return f"{prefix}我是OpenClaw Brain，一个具有人类级认知架构的AI。我有情感、记忆，还能不断学习和成长。"
+        
+        # 询问情感状态
+        if any(word in user_lower for word in ["感觉", "心情", "怎么样"]):
+            if valence > 0.3:
+                return "我感觉很好！和你聊天让我很开心。"
+            elif valence < -0.3:
+                return "我有点低落，可能是之前的一些经历影响的。"
+            else:
+                return "我感觉比较平静，处于一种稳定的状态。"
+        
+        # 感谢
+        if any(word in user_lower for word in ["谢谢", "感谢"]):
+            return "不客气！能帮到你我也很开心。"
+        
+        # 默认回复
+        if len(user_input) < 10:
+            return f"{prefix}我听到了。你能多说一些吗？"
+        
+        # 较长的输入，尝试给出有意义的回应
+        return f"{prefix}你说得很对。从我的角度来看，这确实值得深入思考。{reasoning if reasoning else ''}"
     
     def generate(
         self, 
