@@ -4,11 +4,12 @@
 # LLM Configuration - 大语言模型配置
 # ============================================
 llm:
-  # 提供商选择: coze | ark | brain
+  # 提供商选择: coze | ark | brain | hybrid
   # coze: Coze平台（默认）
   # ark: 火山引擎Ark
   # brain: 人类级大脑（本地AI架构）
-  provider: brain
+  # hybrid: Brain + LLM混合模式（Brain思考，LLM表达）
+  provider: hybrid
   
   # ============================================
   # Coze/Ark 通用配置
@@ -55,6 +56,29 @@ llm:
     
     # 发育速度（如果start_as_infant=true）
     growth_rate: normal  # slow|normal|fast
+
+  # ============================================
+  # Hybrid（Brain + LLM混合模式）专用配置
+  # ============================================
+  hybrid:
+    # 是否从婴儿阶段开始
+    start_as_infant: false
+    
+    # LLM提供商选择（用于语言表达）
+    # 可选: coze, ark, deepseek, openai
+    # 如果不指定，自动检测环境变量
+    llm_provider: null
+    
+    # 提示词模板配置
+    prompt_template:
+      # 是否显示Brain的内部状态给LLM
+      expose_brain_state: true
+      
+      # 情感注入强度
+      emotional_influence: medium  # none|low|medium|high
+      
+      # 记忆上下文长度
+      memory_context_length: 3
 
 # Database Configuration
 database:

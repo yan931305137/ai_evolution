@@ -53,6 +53,11 @@ class LLMClient:
             self._init_brain_mode(**kwargs)
             return
         
+        # Hybrid模式：Brain + LLM
+        if self.provider == "hybrid":
+            self._init_hybrid_mode(**kwargs)
+            return
+        
         if self.provider == "ark":
             self.api_key = api_key or os.getenv("ARK_API_KEY") or self._config.get("api_key")
             self.base_url = base_url or os.getenv("ARK_BASE_URL") or self._config.get("base_url", "https://ark.cn-beijing.volces.com/api/v3")
@@ -115,6 +120,38 @@ class LLMClient:
         except ImportError as e:
             logging.error(f"Brain模块导入失败: {e}")
             raise RuntimeError("无法初始化Brain模式，请确保src/brain和src/utils/brain_llm_adapter.py存在")
+    
+    def _init_hybrid_mode(self, **kwargs):
+        """初始化Brain + LLM混合模式"""
+        try:
+            from src.utils.hybrid_brain_client import HybridBrainClient
+            
+            # 从配置文件获取设置
+            hybrid_config = self._config.get("hybrid", {})
+            brain_config = self._config.get("brain", {})
+            
+            # 合并配置
+            init_params = {
+                "start_as_infant": hybrid_config.get("start_as_infant", brain_config.get("start_as_infant", False)),
+                "llm_provider": hybrid_config.get("llm_provider", None),
+                **kwargs
+            }
+            
+            self._hybrid_client = HybridBrainClient(**init_params)
+            self.model_name = self._hybrid_client.model_name
+            
+            # 设置兼容属性
+            self.api_key = "hybrid_mode_uses_llm_key"
+            self.base_url = "hybrid_brain_llm"
+            
+            logging.info(f"🧠🤖 LLMClient已切换到Hybrid混合模式 | 模型: {self.model_name}")
+            logging.info(f"   Brain发育阶段: {self._hybrid_client.developmental_stage}")
+            logging.info(f"   LLM提供商: {self._hybrid_client.llm_provider}")
+            
+        except ImportError as e:
+            logging.error(f"混合模式模块导入失败: {e}")
+            raise RuntimeError("无法初始化Hybrid模式，请确保所有依赖模块存在")
+    
     def _extract_text_from_content(self, content: any) -> str:
         """Extract text from message content which could be string or list."""
         if isinstance(content, str):
@@ -224,6 +261,10 @@ class LLMClient:
         if self.provider == "brain":
             return self._brain_client.generate(messages, stream=stream, temperature=temperature)
         
+        # Hybrid模式：Brain + LLM
+        if self.provider == "hybrid":
+            return self._hybrid_client.generate(messages, stream=stream, temperature=temperature)
+        
         try:
             # 转换消息格式
             langchain_messages = self._convert_messages_to_langchain(messages)
@@ -284,6 +325,11 @@ class LLMClient:
         # Brain模式：使用人类级大脑
         if self.provider == "brain":
             yield from self._brain_client.stream_generate(messages, temperature=temperature)
+            return
+        
+        # Hybrid模式：Brain + LLM
+        if self.provider == "hybrid":
+            yield from self._hybrid_client.stream_generate(messages, temperature=temperature)
             return
         
         try:
