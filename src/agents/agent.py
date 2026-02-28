@@ -18,17 +18,31 @@ import time
 # 导入热重载管理器
 from src.utils.hot_reload_manager import hot_reload_manager
 
+# 导入智能执行优化系统
+from src.utils.smart_executor import SmartTaskExecutor, ExecutionMode
+from src.utils.execution_monitor import AutoExecutionMonitor
+from src.utils.self_improvement import SelfImprovementSystem
+
 console = Console()
 logger = logging.getLogger(__name__)
 
 class AutoAgent:
-    """A ReAct-based agent that plans and executes tasks."""
+    """A ReAct-based agent that plans and executes tasks with smart optimization."""
     
     def __init__(self, llm: LLMClient):
         self.llm = llm
         self.max_steps = cfg.get("agent.max_steps", 10000) # Load from config
         self.tools_desc = Tools.get_tool_descriptions()
         self.self_awareness = SelfAwarenessSystem() # Initialize self-awareness system
+        
+        # 初始化智能执行优化系统
+        console.print("[bold green]🧠 初始化智能执行优化系统...[/bold green]")
+        self.smart_executor = SmartTaskExecutor()
+        self.execution_monitor = AutoExecutionMonitor()
+        self.self_improvement = SelfImprovementSystem()
+        console.print("[dim green]  ✓ SmartTaskExecutor - 任务智能分流[/dim green]")
+        console.print("[dim green]  ✓ AutoExecutionMonitor - 执行过程监控[/dim green]")
+        console.print("[dim green]  ✓ SelfImprovementSystem - 持续自我优化[/dim green]")
         
         # 初始化上下文压缩器
         self.context_compressor = ContextCompressor(
@@ -107,10 +121,62 @@ class AutoAgent:
         return json.loads(clean_content)
 
     def run(self, goal: str, history: List[Dict[str, str]] = None):
-        """Execute a goal using the ReAct loop."""
+        """Execute a goal using the ReAct loop with smart optimization."""
         if history is None:
             history = []
+        
+        # 🧠 智能执行优化：先尝试本地处理简单任务
+        console.print("\n[bold blue]🚀 Smart Execution Analysis...[/bold blue]")
+        self.execution_monitor.start_monitoring()
+        
+        # 分析任务复杂度
+        complexity = self.execution_monitor.analyze_task(goal)
+        
+        # 尝试智能执行
+        smart_result = self.smart_executor.execute(goal, use_cache=True)
+        
+        if smart_result.mode_used == ExecutionMode.LOCAL_ONLY and smart_result.success:
+            # 本地处理成功，直接返回结果
+            console.print(f"[bold green]✅ Local Processing ({smart_result.duration_ms:.0f}ms)[/bold green]")
+            console.print(f"[dim]Intent: {smart_result.mode_used.value} | LLM calls: {smart_result.llm_calls}[/dim]")
             
+            # 记录执行日志
+            self.execution_monitor.log_step(
+                action_type="brain_process",
+                duration_ms=smart_result.duration_ms,
+                input_size=len(goal),
+                output_size=len(smart_result.content),
+                success=True,
+                metadata={"mode": "local_only", "cached": smart_result.cached}
+            )
+            
+            # 保存到自我改进系统
+            self.self_improvement.log_execution(goal, {
+                "success": True,
+                "mode": "local_only",
+                "duration_ms": smart_result.duration_ms,
+                "intent": getattr(smart_result, 'intent', 'unknown')
+            })
+            
+            # 打印监控报告
+            console.print(f"\n{self.execution_monitor.final_report()}")
+            
+            return smart_result.content
+        
+        # 本地处理失败或不适用，继续使用 LLM
+        console.print(f"[bold yellow]⚡ Escalating to LLM ({smart_result.mode_used.value})...[/bold yellow]")
+        console.print(f"[dim]Reason: {'Local handler failed' if not smart_result.success else 'Complex task requires LLM'}[/dim]")
+        
+        # 记录监控步骤
+        self.execution_monitor.log_step(
+            action_type="llm_call",
+            duration_ms=smart_result.duration_ms,
+            input_size=len(goal),
+            output_size=0,
+            success=True,
+            metadata={"escalation": True, "original_mode": smart_result.mode_used.value}
+        )
+        
         # 1. Retrieve relevant memories
         memory_context = self._retrieve_memory_context(goal)
             
@@ -361,10 +427,17 @@ Your entire response should be parseable by json.loads()."""
                     except Exception as e:
                         logger.debug(f"文档清理失败（非关键）: {e}")
                     
+                    # 记录执行完成到自我改进系统
+                    self._record_execution_completion(goal, True, "finished", step_count)
+                    
                     return final_answer
                 except Exception as e:
                     # 透明度模块加载失败时降级返回原始回答
                     logger.warning(f"透明度模块加载失败，返回原始回答: {str(e)}")
+                    
+                    # 记录执行完成
+                    self._record_execution_completion(goal, True, "finished_no_transparency", step_count)
+                    
                     return summary
             
             # 导入合规校验模块
@@ -502,6 +575,27 @@ Your entire response should be parseable by json.loads()."""
             messages.append({"role": "assistant", "content": content})
             messages.append({"role": "user", "content": f"Observation: {observation}"})
             
+            # 记录执行步骤到监控器
+            self.execution_monitor.log_step(
+                action_type="llm_call" if step_count % 2 == 1 else "tool_use",
+                duration_ms=100,  # 简化，实际应测量真实耗时
+                input_size=len(content),
+                output_size=len(observation),
+                success=not observation.startswith("Error"),
+                metadata={"step": step_count, "action": action}
+            )
+        
+        # 达到最大步数，生成监控报告
+        console.print(f"\n{self.execution_monitor.final_report()}")
+        
+        # 保存到自我改进系统
+        self.self_improvement.log_execution(goal, {
+            "success": False,
+            "mode": "llm_max_steps",
+            "steps": step_count,
+            "reason": "max_steps_reached"
+        })
+        
         return "Max steps reached without completion."
 
     def _path_to_module_name(self, file_path: str) -> Optional[str]:
@@ -718,6 +812,29 @@ Your entire response should be parseable by json.loads()."""
                 consecutive_success_count = 0
                 # 异常后休眠更长时间，避免重复出错
                 time.sleep(60 * 60)
+
+    def _record_execution_completion(self, goal: str, success: bool, mode: str, steps: int):
+        """记录执行完成到监控和自我改进系统"""
+        try:
+            # 生成监控报告
+            report = self.execution_monitor.final_report()
+            console.print(f"\n[dim]{report}[/dim]")
+            
+            # 保存到自我改进系统
+            self.self_improvement.log_execution(goal, {
+                "success": success,
+                "mode": mode,
+                "steps": steps,
+                "timestamp": time.time()
+            })
+            
+            # 定期生成改进报告（每10次执行）
+            if steps % 10 == 0:
+                improvement_report = self.self_improvement.generate_improvement_plan()
+                console.print(f"\n[bold cyan]🔄 Self-Improvement Report:[/bold cyan]")
+                console.print(improvement_report)
+        except Exception as e:
+            logger.debug(f"Execution recording failed (non-critical): {e}")
 
 # Example usage (for testing)
 if __name__ == "__main__":

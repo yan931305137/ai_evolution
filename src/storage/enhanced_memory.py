@@ -682,6 +682,78 @@ class EnhancedMemorySystem:
     
     # 别名方法，用于向后兼容
     search_memory = search
+    
+    def consolidate_experiences(self, llm_client=None) -> List[str]:
+        """
+        整合经验记忆，提取知识点
+        这是从基础 MemorySystem.consolidate_memories 的增强版本
+        """
+        if not self.client:
+            return []
+        
+        try:
+            # 获取最近的对话和经验记忆
+            recent_experiences = self.get_recent_memories(
+                memory_type=MemoryType.EXPERIENCE, 
+                limit=10
+            )
+            recent_conversations = self.get_recent_memories(
+                memory_type=MemoryType.CONVERSATION, 
+                limit=5
+            )
+            
+            all_memories = recent_experiences + recent_conversations
+            if not all_memories:
+                return []
+            
+            # 提取内容
+            knowledge_points = []
+            for memory in all_memories:
+                content = memory.get('content', '')
+                if content and len(content) > 20:  # 过滤太短的记录
+                    # 简单的启发式提取：找包含"成功"、"完成"、"发现"等的句子
+                    if any(keyword in content for keyword in ['成功', '完成', '发现', '学习', '知识', '经验']):
+                        knowledge_points.append(content[:200])  # 限制长度
+            
+            # 去重
+            knowledge_points = list(set(knowledge_points))
+            
+            # 如果有 LLM 客户端，使用 LLM 进行更智能的整合
+            if llm_client and len(all_memories) >= 3:
+                try:
+                    context = "\n".join([m.get('content', '') for m in all_memories[:5]])
+                    prompt = f"""从以下经验记录中提取2-3个关键知识点:
+{context}
+
+用简洁的JSON数组格式返回，每个元素是一个知识要点字符串。"""
+                    
+                    response = llm_client.generate([{"role": "user", "content": prompt}])
+                    # 尝试解析 JSON 响应
+                    import json
+                    import re
+                    
+                    # 尝试从响应中提取 JSON 数组
+                    json_match = re.search(r'\[.*\]', response, re.DOTALL)
+                    if json_match:
+                        extracted = json.loads(json_match.group())
+                        if isinstance(extracted, list):
+                            knowledge_points = extracted
+                except Exception as e:
+                    logging.warning(f"LLM consolidation failed: {e}, using heuristic extraction")
+            
+            # 将知识点保存到知识库
+            for point in knowledge_points[:5]:  # 最多保存5个
+                self.add_memory(
+                    content=point,
+                    memory_type=MemoryType.KNOWLEDGE,
+                    source="consolidation"
+                )
+            
+            return knowledge_points[:5]
+            
+        except Exception as e:
+            logging.error(f"Failed to consolidate experiences: {e}")
+            return []
 
 
 # 别名导出，用于向后兼容

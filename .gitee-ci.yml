@@ -1,0 +1,166 @@
+# Gitee CI/CD 流水线配置
+# 触发条件：代码推送到main/dev分支、创建PR时自动执行
+
+stages:
+  - test
+  - security-scan
+  - build
+  - deploy
+
+variables:
+  PYTHON_VERSION: "3.10"
+  DOCKER_REGISTRY: ${DOCKER_REGISTRY:-registry.cn-hangzhou.aliyuncs.com}
+  DOCKER_IMAGE_NAME: ${DOCKER_IMAGE_NAME}
+  TEST_SERVER_HOST: ${TEST_SERVER_HOST}
+  TEST_SERVER_USER: ${TEST_SERVER_USER}
+  # 使用国内 PyPI 镜像加速
+  PIP_INDEX_URL: https://mirrors.aliyun.com/pypi/simple/
+  PIP_TRUSTED_HOST: mirrors.aliyun.com
+
+# 第一阶段：代码质量校验与单元测试
+test:
+  stage: test
+  image: python:${PYTHON_VERSION}
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - .cache/pip/
+  before_script:
+    - python -m pip install --upgrade pip -i ${PIP_INDEX_URL}
+    - pip config set global.index-url ${PIP_INDEX_URL}
+    - pip config set global.trusted-host ${PIP_TRUSTED_HOST}
+  script:
+    - pip install -r requirements.txt
+    - pip install pytest pytest-cov safety pip-audit
+    # 执行单元测试
+    - pytest tests/ --cov=./ --cov-report=xml --cov-fail-under=25
+    # 上传测试覆盖率报告
+    - echo "测试覆盖率报告已生成"
+  artifacts:
+    paths:
+      - coverage.xml
+    expire_in: 1 week
+  only:
+    - main
+    - dev
+    - merge_requests
+
+# 第二阶段：敏感信息扫描
+secrets-scan:
+  stage: test
+  image: python:${PYTHON_VERSION}
+  before_script:
+    - python -m pip install --upgrade pip -i ${PIP_INDEX_URL}
+    - pip config set global.index-url ${PIP_INDEX_URL}
+    - pip install -r requirements.txt
+  script:
+    - echo "🔒 Running secrets scan..."
+    - python -m src.utils.security_scanner . --format text --max-critical 0 --max-high 0
+  allow_failure: false
+  only:
+    - main
+    - dev
+    - merge_requests
+
+# 第三阶段：依赖安全扫描
+security-audit:
+  stage: security-scan
+  image: python:${PYTHON_VERSION}
+  before_script:
+    - python -m pip install --upgrade pip -i ${PIP_INDEX_URL}
+    - pip config set global.index-url ${PIP_INDEX_URL}
+    - pip install safety pip-audit
+  script:
+    # 使用 safety 扫描已知漏洞
+    - safety check --full-report --fail-on=ALL
+    # 使用 pip-audit 二次扫描
+    - pip-audit --desc
+  only:
+    - main
+    - dev
+    - merge_requests
+
+# 第四阶段：镜像构建
+build-image:
+  stage: build
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  before_script:
+    - docker info
+  script:
+    # 登录镜像仓库
+    - echo "${DOCKER_REGISTRY_PASSWORD}" | docker login -u "${DOCKER_REGISTRY_USER}" --password-stdin ${DOCKER_REGISTRY}
+    # 构建镜像
+    - docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:${CI_COMMIT_SHA} .
+    - docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:latest .
+    # 推送镜像
+    - docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:${CI_COMMIT_SHA}
+    - docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:latest
+  only:
+    - main
+    - dev
+
+# 第五阶段：测试环境自动部署
+deploy-test:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client
+    - eval $(ssh-agent -s)
+    - echo "${TEST_SERVER_SSH_KEY}" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+  script:
+    - |
+      ssh -o StrictHostKeyChecking=no ${TEST_SERVER_USER}@${TEST_SERVER_HOST} << EOF
+        # 拉取最新镜像
+        docker pull ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:${CI_COMMIT_SHA}
+        # 停止旧容器
+        docker stop app-test || true
+        docker rm app-test || true
+        # 启动新容器
+        docker run -d --name app-test -p 8000:8000 --restart=always ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:${CI_COMMIT_SHA}
+        # 等待服务启动
+        sleep 10
+        # 执行冒烟测试
+        curl -f http://localhost:8000/health || exit 1
+      EOF
+  only:
+    - dev
+  environment:
+    name: test
+    url: http://${TEST_SERVER_HOST}:8000
+
+# 第六阶段：生产环境部署（手动触发）
+deploy-prod:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client
+    - eval $(ssh-agent -s)
+    - echo "${PROD_SERVER_SSH_KEY}" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+  script:
+    - |
+      ssh -o StrictHostKeyChecking=no ${PROD_SERVER_USER}@${PROD_SERVER_HOST} << EOF
+        # 拉取最新镜像
+        docker pull ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:${CI_COMMIT_SHA}
+        # 使用蓝绿部署策略
+        docker stop app-blue || true
+        docker rename app-blue app-green || true
+        docker run -d --name app-blue -p 80:8000 --restart=always ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:${CI_COMMIT_SHA}
+        # 健康检查
+        sleep 10
+        curl -f http://localhost:80/health || exit 1
+        # 清理旧容器
+        docker stop app-green || true
+        docker rm app-green || true
+      EOF
+  only:
+    - main
+  environment:
+    name: production
+    url: http://${PROD_SERVER_HOST}
+  when: manual  # 手动触发

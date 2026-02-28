@@ -132,8 +132,8 @@ def delegate_task(agent_id: str, subtask: str, context: Optional[dict] = None) -
         
         # 存储到记忆
         memory.add_memory(
-            f"Agent {agent_id} executed: {subtask}\nResult: {result.output[:200]}",
-            metadata={
+            content=f"Agent {agent_id} executed: {subtask}\nResult: {result.output[:200]}",
+            context={
                 "agent_id": agent_id,
                 "task": subtask,
                 "success": result.success,

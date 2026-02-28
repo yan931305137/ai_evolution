@@ -295,8 +295,13 @@ class EnhancedLifeCycleManager:
         if self.current_milestone_index < len(self.milestones):
             current_milestone = self.milestones[self.current_milestone_index]
             return [current_milestone]
-        
-        return []
+        else:
+            # 所有里程碑已完成，标记目标为完成并清除
+            self._log(f"Goal completed: {self.long_term_goal[:50]}...")
+            self.long_term_goal = ""  # 清除目标，下次循环会选择新目标
+            self.milestones = []
+            self.current_milestone_index = 0
+            return []
     
     def _choose_intrinsic_goal(self):
         """选择内在目标"""

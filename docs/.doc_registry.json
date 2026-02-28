@@ -444,6 +444,42 @@
       ],
       "auto_delete": false,
       "last_verified_at": "2026-03-01T04:15:02.344283"
+    },
+    "doc_278e47b0": {
+      "doc_id": "doc_278e47b0",
+      "path": "docs/llm_call_scene_statistics_report.md",
+      "title": "近1个月LLM调用场景分类统计报告",
+      "task_id": "task_4536255c",
+      "created_at": "2026-03-01T05:11:12.397314",
+      "ttl_days": 7,
+      "status": "active",
+      "doc_type": "analysis",
+      "related_files": [
+        {
+          "path": "docs/llm_call_analysis_report.md",
+          "hash": "904ce97a"
+        }
+      ],
+      "auto_delete": true,
+      "last_verified_at": "2026-03-01T05:11:12.397320"
+    },
+    "doc_f43a2f08": {
+      "doc_id": "doc_f43a2f08",
+      "path": "docs/llm_call_scene_statistics_report.md",
+      "title": "近1个月外部LLM调用场景占比统计报告",
+      "task_id": "task_a2e41546",
+      "created_at": "2026-03-01T05:17:46.390975",
+      "ttl_days": 7,
+      "status": "active",
+      "doc_type": "analysis",
+      "related_files": [
+        {
+          "path": "docs/llm_call_analysis_report.md",
+          "hash": "904ce97a"
+        }
+      ],
+      "auto_delete": true,
+      "last_verified_at": "2026-03-01T05:17:46.390997"
     }
   }
 }

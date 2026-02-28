@@ -1,0 +1,167 @@
+# Gitee CI/CD 集成配置
+# ============================================
+# 本文件配置 Gitee Go CI/CD 自动化集成
+# 也可以在 .env 文件中设置对应的环境变量
+# ============================================
+
+# Gitee 认证配置
+gitee:
+  # Gitee 私人令牌
+  # 获取方式: https://gitee.com/profile/personal_access_tokens
+  # 需要的权限: projects, hook, pull_requests
+  token: null
+  
+  # 仓库所有者（用户名或组织名）
+  owner: null
+  
+  # 仓库名称
+  repo: null
+  
+  # Webhook 配置
+  webhook:
+    # 是否自动创建 Webhook
+    auto_create: true
+    
+    # Webhook 密码/密钥
+    secret: null
+    
+    # 触发事件
+    events:
+      - push
+      - merge_request
+      - tag_push
+  
+  # 安全设置
+  security:
+    # 安全检查失败时是否阻止操作
+    block_on_failure: true
+    
+    # 是否在日志中自动清理敏感信息
+    sanitize_logs: true
+    
+    # PR 创建前强制安全检查
+    require_security_check_before_pr: true
+    
+    # 提交信息强制安全检查
+    require_security_check_for_commits: true
+  
+  # 注意: 以上配置也可以通过环境变量设置:
+  # GITEE_TOKEN, GITEE_OWNER, GITEE_REPO
+
+# ============================================
+# 进化系统 CI/CD 配置
+# ============================================
+# 控制进化完成后是否自动触发 CI/CD
+# ============================================
+
+self_evolution:
+  # 基础进化配置
+  enabled: true
+  iteration_interval_minutes: 30
+  max_consecutive_failures: 3
+  auto_restart: true
+  
+  # CI/CD 集成配置
+  cicd:
+    # 是否启用 CI/CD 自动化
+    enabled: false
+    
+    # 应用阶段后是否自动触发 CI/CD
+    # 如果为 true，进化应用想法后会自动运行测试
+    auto_trigger: true
+    
+    # 进化分支名称
+    # CI/CD 将在这个分支上运行
+    branch: "evolution"
+    
+    # CI/CD 成功后是否自动创建 Pull Request
+    create_pr: true
+    
+    # 是否自动合并 PR（谨慎开启！）
+    # 建议仅在完全信任进化系统时启用
+    # 生产环境建议保持 false，人工审查后再合并
+    auto_merge: false
+    
+    # CI 流水线文件名
+    # 对应 .gitee-ci.yml 文件
+    pipeline: "default"
+    
+    # 等待 CI/CD 完成的超时时间（秒）
+    timeout: 600
+    
+    # 轮询间隔（秒）
+    poll_interval: 10
+    
+    # 安全设置
+    security:
+      # CI/CD 触发前是否运行安全扫描
+      enable_security_scan: true
+      
+      # 安全扫描失败时是否阻止 CI/CD
+      # true = 发现敏感信息时不触发 CI/CD
+      # false = 仅警告，继续 CI/CD
+      block_on_failure: true
+      
+      # 允许的最大关键问题数（0 = 不允许任何问题）
+      max_critical_issues: 0
+      
+      # 允许的最大高危问题数
+      max_high_issues: 0
+      
+      # 是否在 PR 中添加安全扫描报告
+      include_scan_report_in_pr: true
+
+# ============================================
+# PR 模板配置
+# ============================================
+pr_template:
+  # PR 标题前缀
+  title_prefix: "🤖 Evolution: "
+  
+  # PR 内容模板
+  body: |
+    ## 🤖 Automated Evolution Changes
+    
+    此 PR 包含由 AI 进化系统自动生成的更改。
+    
+    ### 变更摘要
+    - 基于评估的代码改进
+    - 自动化重构和优化
+    - 测试覆盖率增强
+    
+    ### 验证
+    - [x] 所有测试通过
+    - [x] 代码质量检查通过
+    - [x] 未引入破坏性变更
+    - [x] 安全扫描通过
+    
+    ---
+    *此 PR 由进化反馈循环自动创建*
+
+# ============================================
+# CI/CD 状态回调配置
+# ============================================
+callbacks:
+  # 是否在状态变化时打印日志
+  log_status_changes: true
+  
+  # 是否在完成时打印详细结果
+  log_completion_details: true
+
+# ============================================
+# 平台特定配置
+# ============================================
+platform:
+  # 镜像仓库配置（国内建议使用阿里云或腾讯云）
+  docker_registry: "registry.cn-hangzhou.aliyuncs.com"
+  
+  # 国内加速设置
+  mirrors:
+    # PyPI 镜像
+    pypi: "https://mirrors.aliyun.com/pypi/simple/"
+    
+    # npm 镜像（如需要前端构建）
+    npm: "https://registry.npmmirror.com"
+    
+    # Maven 镜像（如需要 Java 构建）
+    maven: "https://maven.aliyun.com/repository/public"

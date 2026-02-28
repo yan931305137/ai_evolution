@@ -149,6 +149,11 @@ secret-scan-results.*
 .trufflehog/
 .gitleaks/
 
+# Identity & Device Keys
+identity/
+*.device.json
+device.json
+
 # ============================================
 # Jupyter Notebook
 # ============================================
