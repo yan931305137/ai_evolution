@@ -1,6 +1,6 @@
 import importlib
 import inspect
-from src.tools import skills
+from src import skills
 
 from .file_tools import list_files, read_file, write_file, move_file, scan_project, register_document, check_documents_status
 from .code_tools import modify_skill, patch_core_code, create_skill, patch_code
