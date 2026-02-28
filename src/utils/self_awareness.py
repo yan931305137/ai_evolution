@@ -199,6 +199,8 @@ class SelfAwarenessSystem:
         
         # 更新自我认知层级
         self.update_awareness_level()
+        
+        return insights
 
     def get_capability_success_rates(self) -> Dict[str, float]:
         """
@@ -215,9 +217,6 @@ class SelfAwarenessSystem:
             字典，key为能力名称，value为对应使用次数
         """
         return {cap_name: cap.usage_count for cap_name, cap in self.capabilities.items()}
-        self.update_awareness_level()
-        
-        return insights
     
     def _generate_insights(self, topic: str, content: str, emotional_state: str) -> str:
         """生成洞察（基于反思内容的启发式规则）"""

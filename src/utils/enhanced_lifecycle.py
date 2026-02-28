@@ -200,12 +200,12 @@ class EnhancedLifeCycleManager:
                 
                 # 等待下一周期
                 self.state = "IDLE"
-                time.sleep(60)
+                time.sleep(30)
                 
             except Exception as e:
                 logging.error(f"Life cycle error: {e}")
                 self._log(f"Error in life cycle: {e}")
-                time.sleep(60)
+                time.sleep(30)
     
     def _check_vitality(self):
         """检查生物状态"""
@@ -429,7 +429,7 @@ class EnhancedLifeCycleManager:
             self._log(f"Reflection failed: {e}")
     
     def _engage_creativity(self):
-        """进行创造性活动"""
+        """进行创造性活动 - 增加主题多样性"""
         self._log("Engaging creativity engine...")
         
         try:
@@ -445,12 +445,39 @@ class EnhancedLifeCycleManager:
                     self.emotions.trigger_emotion(EmotionType.SURPRISE, 40.0, "产生创意")
             
             elif method == CreativityMethod.DIVERGENT:
-                topic = "AI能力提升"
+                # 🚀 增加多样化主题池
+                topic_pool = [
+                    # 技术能力
+                    "AI算法优化", "系统设计创新", "数据处理新技术",
+                    # 用户体验  
+                    "人机交互改进", "个性化服务", "智能助手能力",
+                    # 学习成长
+                    "知识管理新方法", "技能提升路径", "自适应学习",
+                    # 应用场景
+                    "文档智能处理", "代码自动生成", "多模态感知应用",
+                    # 自我进化
+                    "自主优化策略", "元学习能力", "持续进化机制",
+                    # 协作能力
+                    "多智能体协作", "人机协同模式", "群体智慧",
+                ]
+                
+                # 根据长期目标调整主题选择
+                if self.long_term_goal:
+                    # 如果目标与文档相关，增加文档主题权重
+                    if any(keyword in self.long_term_goal for keyword in ["文档", "MD", "知识", "资料"]):
+                        topic_pool.extend(["文档结构优化", "知识图谱构建", "智能文档检索"] * 3)
+                    # 如果目标与代码相关，增加代码主题权重
+                    elif any(keyword in self.long_term_goal for keyword in ["代码", "编程", "开发", "软件"]):
+                        topic_pool.extend(["代码质量提升", "自动化测试", "持续集成"] * 3)
+                
+                topic = random.choice(topic_pool)
+                self._log(f"Divergent thinking on topic: {topic}")
+                
                 ideas = self.creativity.generate_divergent_ideas(topic, 3)
                 if ideas:
-                    self._log(f"Generated {len(ideas)} divergent ideas")
+                    self._log(f"Generated {len(ideas)} divergent ideas for '{topic}'")
                     for i, idea in enumerate(ideas):
-                        self._log(f"  {i+1}. {idea.idea[:50]}...")
+                        self._log(f"  {i+1}. {idea.idea[:60]}...")
         
         except Exception as e:
             self._log(f"Creativity engagement failed: {e}")
