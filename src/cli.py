@@ -22,7 +22,16 @@ if "HF_ENDPOINT" not in os.environ:
 
 from src.utils.config import cfg
 from src.storage.database import Database
-from src.utils.llm import LLMClient
+
+# 智能LLM客户端选择 - 优先使用EnhancedHybridBrain以减少API调用
+try:
+    from src.utils.enhanced_hybrid_brain import EnhancedHybridBrain
+    logging.info("🧠⚡ 使用EnhancedHybridBrain - 70%对话将本地处理，大幅减少API成本")
+    USE_ENHANCED = True
+except ImportError:
+    from src.utils.llm import LLMClient
+    logging.warning("⚠️  EnhancedHybridBrain不可用，回退到标准LLMClient")
+    USE_ENHANCED = False
 
 from src.agents.agent import AutoAgent
 from src.utils.enhanced_lifecycle import EnhancedLifeCycleManager
@@ -98,9 +107,19 @@ def main():
     console.print("[bold green]Welcome to OpenClaw-Local (Doubao Evolution Edition)![/bold green]")
     console.print("[dim]Type '/exit' to quit, '/agent' for manual task, '/auto' to toggle autonomy, '/evolve' to start self-evolution, '/reload' to check hot reload status.[/dim]")
     
-    # Initialize Core Components
+    # Initialize Core Components with Smart LLM Selection
     db = Database()
-    llm = LLMClient()
+    
+    # 优先使用EnhancedHybridBrain，本地处理简单对话，仅在需要时调用LLM
+    if USE_ENHANCED:
+        llm = EnhancedHybridBrain(
+            start_as_infant=False,
+            local_first=True,  # 优先本地处理
+            llm_provider=None  # 自动检测
+        )
+    else:
+        llm = LLMClient()
+        
     agent = AutoAgent(llm)
     personality_type = cfg.get("personality.type", "balanced")
     lifecycle = EnhancedLifeCycleManager(llm, db, personality_type=personality_type)
@@ -252,20 +271,35 @@ def main():
             full_response = ""
             
             with console.status("[bold green]Thinking...[/bold green]", spinner="dots") as status:
-                stream = llm.stream_generate(history)
-                # First chunk to break the status spinner
-                try:
-                    first_chunk = next(stream)
+                # 使用EnhancedHybridBrain或标准LLM
+                if USE_ENHANCED:
+                    # EnhancedHybridBrain返回完整响应，需要模拟流式
+                    response = llm.generate(history)
+                    full_response = response.content
                     status.stop()
-                    console.print(first_chunk, end="")
-                    full_response += first_chunk
-                except StopIteration:
-                    status.stop()
-            
-            # Print remaining chunks
-            for chunk in stream:
-                console.print(chunk, end="")
-                full_response += chunk
+                    # 模拟流式输出
+                    words = full_response.split()
+                    for i, word in enumerate(words):
+                        console.print(word, end=" " if i < len(words) - 1 else "")
+                        if i % 5 == 0:  # 每5个词稍微停顿模拟流式效果
+                            import time
+                            time.sleep(0.01)
+                else:
+                    # 标准LLM流式输出
+                    stream = llm.stream_generate(history)
+                    # First chunk to break the status spinner
+                    try:
+                        first_chunk = next(stream)
+                        status.stop()
+                        console.print(first_chunk, end="")
+                        full_response += first_chunk
+                    except StopIteration:
+                        status.stop()
+                    
+                    # Print remaining chunks
+                    for chunk in stream:
+                        console.print(chunk, end="")
+                        full_response += chunk
                 
             console.print() # Newline
             

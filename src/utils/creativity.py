@@ -21,12 +21,18 @@ import functools
 
 try:
     from src.utils.llm import LLMClient
+    # 尝试导入EnhancedHybridBrain以优化LLM调用
+    try:
+        from src.utils.enhanced_hybrid_brain import EnhancedHybridBrain
+        USE_ENHANCED_HYBRID = True
+    except ImportError:
+        USE_ENHANCED_HYBRID = False
     from src.storage.enhanced_memory import EnhancedMemorySystem, MemoryType
     from src.utils.emotions import EmotionSystem, EmotionType
     from src.utils.personality import PersonalitySystem, TraitCategory
 except ImportError:
     # 兼容测试环境导入，避免模块不存在错误
-    pass
+    USE_ENHANCED_HYBRID = False
 
 
 class CreativityMethod(Enum):
@@ -68,8 +74,19 @@ class CreativityEngine:
                  llm_client = None,
                  memory_system = None,
                  emotion_system = None,
-                 personality_system = None):
-        self.llm = llm_client
+                 personality_system = None,
+                 use_enhanced: bool = True):
+        # 智能选择LLM客户端
+        if use_enhanced and USE_ENHANCED_HYBRID:
+            try:
+                self.llm = EnhancedHybridBrain(start_as_infant=False, local_first=True)
+                logging.info("🎨 创造力引擎使用EnhancedHybridBrain - 70%创意本地生成")
+            except Exception as e:
+                logging.warning(f"EnhancedHybridBrain初始化失败，回退到标准LLM: {e}")
+                self.llm = llm_client
+        else:
+            self.llm = llm_client
+            
         self.memory = memory_system
         self.emotions = emotion_system
         self.personality = personality_system
@@ -185,6 +202,40 @@ class CreativityEngine:
                     num_concepts = len(all_results)
             
             selected_concepts = random.sample(all_results, num_concepts)
+            
+            # 🚀 优化：优先使用EnhancedHybridBrain本地生成
+            if USE_ENHANCED_HYBRID and hasattr(self.llm, 'generate'):
+                # 构建本地友好的prompt
+                simple_prompt = f"将以下概念组合成一个创新想法：{', '.join(selected_concepts)}。简要描述这个组合创意。"
+                messages = [{"role": "user", "content": simple_prompt}]
+                
+                try:
+                    response = self.llm.generate(messages, stream=False)
+                    if response and response.content:
+                        idea_text = response.content.strip()
+                        # 如果成功本地生成，直接使用
+                        if len(idea_text) > 20:  # 基本长度检查
+                            novelty = self._assess_novelty(idea_text, selected_concepts)
+                            feasibility = self._assess_feasibility(idea_text)
+                            value = self._assess_value(idea_text, "本地生成的组合创意")
+                            idea = CreativeIdea(
+                                idea=idea_text[:500],  # 限制长度
+                                method=CreativityMethod.COMBINATORIAL.value,
+                                source_concepts=[c[:100] for c in selected_concepts],
+                                novelty_score=novelty,
+                                feasibility_score=feasibility,
+                                value_score=value,
+                                timestamp=time.time(),
+                                emotional_context=self.emotions.get_emotional_state_description() if self.emotions else "neutral"
+                            )
+                            self.ideas.append(idea)
+                            self._update_stats(CreativityMethod.COMBINATORIAL, (novelty + feasibility + value)/3 > 60)
+                            logging.debug("组合创意本地生成成功，零API成本")
+                            return idea
+                except Exception as e:
+                    logging.debug(f"本地生成失败，回退到LLM: {e}")
+            
+            # 如果本地生成失败或不可用，使用传统LLM方式
             prompt = f"生成组合创意，概念：{selected_concepts}，上下文：{context}，严格返回JSON格式，包含idea和explanation两个字段"
             response = self._call_llm_with_retry(prompt)
             
@@ -319,7 +370,44 @@ class CreativityEngine:
             selected_perspectives = random.sample(perspectives, min(num_ideas, len(perspectives)))
             
             if self.llm:
-                # 使用 LLM 生成发散性想法
+                # 🚀 优化：使用EnhancedHybridBrain批量本地生成
+                if USE_ENHANCED_HYBRID and hasattr(self.llm, 'generate'):
+                    try:
+                        # 一次性生成分散想法，而不是多次调用
+                        combined_prompt = f"""针对主题"{topic}"，从以下{len(selected_perspectives)}个角度各生成一个创新想法：
+{chr(10).join([f'{i+1}. {p}' for i, p in enumerate(selected_perspectives)])}
+
+请用简洁的语言描述每个想法，用换行分隔。"""
+                        
+                        messages = [{"role": "user", "content": combined_prompt}]
+                        response = self.llm.generate(messages, stream=False)
+                        
+                        if response and response.content:
+                            # 解析返回的想法
+                            content_lines = [line.strip() for line in response.content.split('\n') if line.strip()]
+                            for i, line in enumerate(content_lines[:num_ideas]):
+                                if len(line) > 10:  # 基本长度检查
+                                    perspective = selected_perspectives[i] if i < len(selected_perspectives) else "综合角度"
+                                    idea = CreativeIdea(
+                                        idea=line[:300],
+                                        method=CreativityMethod.DIVERGENT.value,
+                                        source_concepts=[topic[:100], perspective],
+                                        novelty_score=self._assess_novelty(line, []),
+                                        feasibility_score=self._assess_feasibility(line),
+                                        value_score=self._assess_value(line, "本地批量生成"),
+                                        timestamp=time.time(),
+                                        emotional_context=self.emotions.get_emotional_state_description() if self.emotions else "neutral"
+                                    )
+                                    ideas.append(idea)
+                            
+                            if ideas:
+                                self.creativity_stats["llm_success_count"] += 1
+                                logging.info(f"发散想法批量本地生成成功：{len(ideas)}个想法，零API成本")
+                                return ideas
+                    except Exception as e:
+                        logging.debug(f"批量本地生成失败，回退到单一生成: {e}")
+                
+                # 如果本地批量生成失败，使用传统方式
                 for i, perspective in enumerate(selected_perspectives):
                     prompt = f"""从{perspective}思考主题"{topic}"，生成一个创新想法，严格返回JSON格式，包含idea和rationale两个字段。要求：
                     1. 想法要新颖独特

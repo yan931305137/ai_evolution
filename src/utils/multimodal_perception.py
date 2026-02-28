@@ -23,6 +23,13 @@ except ImportError:
 from src.storage.enhanced_memory import EnhancedMemorySystem, MemoryType, ModalityType, create_emotional_tag
 from src.utils.emotions import EmotionSystem, EmotionType
 
+# 🚀 优化：尝试导入本地模板系统以减少LLM调用
+try:
+    from src.brain.local_response_system import TemplateResponseEngine
+    USE_LOCAL_TEMPLATES = True
+except ImportError:
+    USE_LOCAL_TEMPLATES = False
+
 
 class PerceptionType(Enum):
     """感知类型"""
@@ -52,13 +59,23 @@ class MultimodalPerceptionSystem:
     def __init__(self,
                  llm_client: LLMClient,
                  memory_system: EnhancedMemorySystem,
-                 emotion_system: EmotionSystem = None):
+                 emotion_system: EmotionSystem = None,
+                 use_local_templates: bool = True):
         self.llm = llm_client
         self.memory = memory_system
         self.emotions = emotion_system
         
         # 默认使用vision模型
         self.vision_model = "doubao-seed-1-6-vision-250815"
+        
+        # 🚀 优化：初始化本地模板引擎
+        if use_local_templates and USE_LOCAL_TEMPLATES:
+            self.template_engine = TemplateResponseEngine()
+            # 添加视觉感知专用模板
+            self._init_visual_templates()
+            logging.info("👁️ 多模态感知系统启用本地模板，简单描述任务将零成本处理")
+        else:
+            self.template_engine = None
         
         # 感知历史
         self.perception_history: List[PerceptionResult] = []
@@ -69,8 +86,41 @@ class MultimodalPerceptionSystem:
             "total_perceptions": 0,
             "visual_count": 0,
             "video_count": 0,
-            "high_confidence_count": 0
+            "high_confidence_count": 0,
+            "local_template_hits": 0  # 🚀 新增统计
         }
+    
+    def _init_visual_templates(self):
+        """初始化视觉感知模板"""
+        if not self.template_engine:
+            return
+        
+        # 添加简单的视觉描述模板
+        from src.brain.local_response_system import ResponseTemplate
+        
+        self.visual_templates = {
+            "describe": [
+                "我看到一张图片，内容很有趣。",
+                "这是一张视觉内容丰富的图片。",
+                "图片展示了有趣的场景。"
+            ],
+            "brief": [
+                "简要描述：一张图片。",
+                "快速预览：视觉内容。"
+            ]
+        }
+    
+    def _use_local_template(self, task: str, detail_level: str) -> Optional[str]:
+        """
+        🚀 使用本地模板生成简单描述
+        仅用于简单描述任务，复杂任务仍需LLM
+        """
+        if not self.visual_templates or task not in ["describe", "brief"]:
+            return None
+        
+        import random
+        templates = self.visual_templates.get(task, self.visual_templates.get("describe", []))
+        return random.choice(templates) if templates else None
     
     def perceive_image(self, 
                       image_url: str,
@@ -90,6 +140,31 @@ class MultimodalPerceptionSystem:
             return None
         
         try:
+            # 🚀 优化：简单描述任务使用本地模板
+            if task in ["describe", "brief"] and detail_level == "brief":
+                local_content = self._use_local_template(task, detail_level)
+                if local_content:
+                    self.stats["local_template_hits"] += 1
+                    logging.debug(f"使用本地模板处理图像{task}任务")
+                    
+                    result = PerceptionResult(
+                        content=local_content,
+                        perception_type=PerceptionType.VISUAL.value,
+                        confidence=60.0,  # 本地模板的默认信心度
+                        emotional_response=None,
+                        timestamp=time.time(),
+                        metadata={
+                            "task": task,
+                            "detail_level": detail_level,
+                            "image_url": image_url,
+                            "model": "local_template",
+                            "is_local": True
+                        }
+                    )
+                    self._record_perception(result)
+                    return result
+            
+            # 复杂任务使用LLM
             # 根据任务生成prompt
             prompt = self._generate_image_prompt(task, detail_level)
             
