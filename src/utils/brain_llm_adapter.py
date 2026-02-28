@@ -67,6 +67,9 @@ class BrainLLMClient:
         self.interaction_count = 0
         self.developmental_stage = self.brain.developmental.stage.name
         
+        # 保存最近一次的系统提示，用于检测JSON格式要求
+        self.last_system_prompt = ""
+        
         logging.info(f"🧠 Brain LLM客户端已初始化 | 发育阶段: {self.developmental_stage}")
     
     def _messages_to_stimulus(self, messages: List[Dict[str, str]]) -> Dict:
@@ -97,6 +100,9 @@ class BrainLLMClient:
                     context_history.append(f"User: {content}")
             elif role == "assistant":
                 context_history.append(f"Assistant: {content}")
+        
+        # 保存系统提示，供后续检测JSON格式要求
+        self.last_system_prompt = system_content
         
         # 构建感官输入
         sensory_input = {
@@ -145,23 +151,25 @@ class BrainLLMClient:
                 user_message = msg.get("content", "")
                 break
         
-        # 生成自然语言响应（而不是决策标记）
-        if action == "respond" or action == "proceed":
-            # 基于用户输入和Brain状态生成回复
+        # 检测系统提示是否要求JSON格式输出（ReAct格式）
+        requires_json = self._detect_json_requirement()
+        
+        if requires_json:
+            # 生成ReAct格式的JSON响应
+            content = self._generate_react_json_response(
+                user_input=user_message,
+                brain_action=action,
+                reasoning=reasoning,
+                emotional_state=emotional_state
+            )
+        else:
+            # 生成自然语言响应
             content = self._generate_natural_response(
                 user_input=user_message,
                 emotional_state=emotional_state,
                 reasoning=reasoning,
                 dominant_drive=dominant_drive
             )
-        elif action == "wait":
-            content = "我在思考，请稍等..."
-        elif action == "explore":
-            content = "这是个有趣的话题，我想了解更多。你能详细说说吗？"
-        elif action == "avoid":
-            content = "这个话题让我有些不安，我们换个话题吧。"
-        else:
-            content = f"[{action}] {reasoning}" if reasoning else f"[{action}]"
         
         # 构建思考过程（类似于reasoning_content）
         thinking_parts = []
@@ -238,6 +246,160 @@ class BrainLLMClient:
         
         # 较长的输入，尝试给出有意义的回应
         return f"{prefix}你说得很对。从我的角度来看，这确实值得深入思考。{reasoning if reasoning else ''}"
+    
+    def _detect_json_requirement(self) -> bool:
+        """
+        检测系统提示是否要求JSON格式输出
+        
+        Returns:
+            如果系统提示要求JSON格式，返回True
+        """
+        if not self.last_system_prompt:
+            return False
+        
+        system_lower = self.last_system_prompt.lower()
+        
+        # 检测JSON格式相关的关键词
+        json_keywords = [
+            "json format", "valid json", "output.*json", "respond.*json",
+            "json object", "json structure", "json格式", "输出.*json"
+        ]
+        
+        import re
+        for keyword in json_keywords:
+            if re.search(keyword, system_lower, re.IGNORECASE):
+                return True
+        
+        # 检测ReAct格式的特定指示
+        react_keywords = [
+            '"thought"', '"action"', '"action_input"',
+            "thought:", "action:", "action_input:",
+            "thought：", "action：", "action_input："
+        ]
+        
+        for keyword in react_keywords:
+            if keyword in system_lower:
+                return True
+        
+        return False
+    
+    def _generate_react_json_response(
+        self,
+        user_input: str,
+        brain_action: str,
+        reasoning: str,
+        emotional_state: Any
+    ) -> str:
+        """
+        生成ReAct格式的JSON响应
+        
+        将Brain的决策转换为Agent期望的JSON格式：
+        {
+            "thought": "思考过程",
+            "action": "工具名称",
+            "action_input": {"参数": "值"}
+        }
+        
+        Args:
+            user_input: 用户输入
+            brain_action: Brain决策的动作
+            reasoning: Brain的推理过程
+            emotional_state: 情感状态
+            
+        Returns:
+            JSON格式的响应字符串
+        """
+        import json
+        
+        # 从系统提示中提取可用的工具
+        available_tools = self._extract_tools_from_prompt()
+        
+        # 根据Brain的action映射到Agent的action
+        action_mapping = {
+            "respond": "finish",  # Brain的respond对应Agent的finish
+            "proceed": "finish",
+            "wait": "thinking",   # 等待对应思考中
+            "explore": "web_search",  # 探索对应搜索
+            "avoid": "finish"     # 回避也对应结束
+        }
+        
+        # 如果Brain的action是工具调用格式（如 tool:web_search）
+        if brain_action.startswith("tool:"):
+            actual_action = brain_action.replace("tool:", "")
+            action_input = {"query": user_input}
+        else:
+            actual_action = action_mapping.get(brain_action, "finish")
+            action_input = {}
+        
+        # 构建thought
+        thought_parts = []
+        if reasoning:
+            thought_parts.append(reasoning)
+        
+        # 添加情感状态的描述
+        if emotional_state:
+            valence = emotional_state.valence
+            if valence > 0.3:
+                thought_parts.append("当前我感到积极和乐观。")
+            elif valence < -0.3:
+                thought_parts.append("当前我感到有些谨慎。")
+        
+        # 根据用户输入构建action_input
+        if actual_action == "finish":
+            # 构建总结
+            if not action_input:
+                action_input = {
+                    "summary": self._generate_natural_response(
+                        user_input=user_input,
+                        emotional_state=emotional_state,
+                        reasoning=reasoning,
+                        dominant_drive=None
+                    )
+                }
+        elif actual_action == "web_search":
+            action_input = {"query": user_input}
+        elif actual_action == "file_read":
+            action_input = {"file_path": user_input}
+        else:
+            # 默认action_input
+            action_input = {"input": user_input}
+        
+        # 构建JSON响应
+        response_dict = {
+            "thought": " ".join(thought_parts) if thought_parts else "基于当前分析，我需要执行下一步操作。",
+            "action": actual_action,
+            "action_input": action_input
+        }
+        
+        return json.dumps(response_dict, ensure_ascii=False)
+    
+    def _extract_tools_from_prompt(self) -> List[str]:
+        """
+        从系统提示中提取可用工具列表
+        
+        Returns:
+            工具名称列表
+        """
+        tools = []
+        if not self.last_system_prompt:
+            return tools
+        
+        # 简单的工具提取逻辑
+        # 寻找 "Available Tools:" 或类似的标记
+        import re
+        
+        # 匹配工具名称（假设格式为 "tool_name: description" 或 "- tool_name"）
+        tool_patterns = [
+            r'-\s+(\w+):',           # - tool_name:
+            r'\n(\w+):\s+\w',       # tool_name: word
+            r'"(\w+)":\s*\{'       # "tool_name": {
+        ]
+        
+        for pattern in tool_patterns:
+            matches = re.findall(pattern, self.last_system_prompt)
+            tools.extend(matches)
+        
+        return list(set(tools))  # 去重
     
     def generate(
         self, 
