@@ -8,7 +8,6 @@ class PerceptionModule:
     def __init__(self):
         # 初始化常用分类规则，用于识别输入类型和关键信息
         self.input_type_patterns = {
-            'text': r'^[\u4e00-\u9fa5a-zA-Z0-9\s\.,!?，。！？]+$',
             'image_url': r'^https?://.*\.(jpg|jpeg|png|gif|bmp|webp)$',
             'audio_url': r'^https?://.*\.(mp3|wav|flac|aac)$',
             'command': r'^/(\w+)\s*(.*)$'
@@ -27,10 +26,12 @@ class PerceptionModule:
         :param input_data: 原始输入字符串
         :return: 输入类型：text/image_url/audio_url/command/unknown
         """
+        input_str = input_data.strip()
         for input_type, pattern in self.input_type_patterns.items():
-            if re.match(pattern, input_data.strip(), re.IGNORECASE):
+            if re.match(pattern, input_str, re.IGNORECASE):
                 return input_type
-        return 'unknown'
+        # 除了特定类型外，所有输入默认归为文本类型
+        return 'text'
 
     def extract_entities(self, input_text: str) -> Dict[str, List[str]]:
         """

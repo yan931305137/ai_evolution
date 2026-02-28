@@ -76,7 +76,7 @@ class ValueAssessmentModule:
         optimized_scores = decision.get('value_scores', {}).copy()
         for dimension, score in assessment['dimension_scores'].items():
             if score < 0.7:
-                optimized_scores[dimension] = min(1.0, score + 0.2)
+                optimized_scores[dimension] = min(1.0, score + 0.3)
         optimized_decision = decision.copy()
         optimized_decision['value_scores'] = optimized_scores
         optimized_decision['description'] = decision.get('description', '') + ' [已优化以符合价值观要求]'
