@@ -333,11 +333,14 @@ EFFICIENT WORKFLOW:
                                  break
                     # 自动判断是否为临时资源
                     is_temporary = any(flag in target_file_path for flag in ["./tmp/", ".tmp", ".cache"])
+                    # 从 action_input 中提取用户命令覆盖标志
+                    user_command_override = action_input.get("user_command_override", False)
                     # 执行合规校验
                     compliance_pass, compliance_result = generation_content_compliance_check(
                         file_path=target_file_path,
                         content_type=content_type,
-                        is_temporary_resource=is_temporary
+                        is_temporary_resource=is_temporary,
+                        user_command_override=user_command_override
                     )
                     
                     if not compliance_pass:

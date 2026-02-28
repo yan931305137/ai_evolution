@@ -79,6 +79,24 @@
       "related_files": [],
       "auto_delete": true,
       "last_verified_at": "2026-02-28T21:52:55.985837"
+    },
+    "doc_2fc9f1be": {
+      "doc_id": "doc_2fc9f1be",
+      "path": "docs/类脑大模型架构设计方案.md",
+      "title": "类脑大模型架构设计方案",
+      "task_id": "task_121300db",
+      "created_at": "2026-02-28T22:08:11.005459",
+      "ttl_days": 14,
+      "status": "active",
+      "doc_type": "design",
+      "related_files": [
+        {
+          "path": "src/brain/",
+          "hash": ""
+        }
+      ],
+      "auto_delete": true,
+      "last_verified_at": "2026-02-28T22:08:11.005464"
     }
   }
 }

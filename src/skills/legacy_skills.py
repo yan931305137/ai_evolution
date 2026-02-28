@@ -829,7 +829,7 @@ def generation_content_compliance_check(file_path: str, content_type: str, is_te
         "output_report": ["./reports/"],
         "output_temp": ["./tmp/"],
         "doc": ["./docs/"],
-        "design": ["./brain/docs/", "./docs/design/"]
+        "design": ["./docs/design/"]
     }
     
     # 2. 定义规则常量：禁止删除的资源路径前缀
