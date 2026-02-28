@@ -321,8 +321,16 @@ async def demo_human_brain():
     
     for i, exp in enumerate(experiences):
         print(f"\n--- 体验 {i+1} ---")
+        
+        # 合并sensory、event和cognitive到一个字典
+        sensory_input = {
+            **exp["sensory"],
+            "event": exp.get("event", {}),
+            "cognitive": exp.get("cognitive", "")
+        }
+        
         result = await brain.experience(
-            exp["sensory"],
+            sensory_input,
             exp.get("social")
         )
         

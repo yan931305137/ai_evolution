@@ -1,0 +1,20 @@
+{
+  "virtual_mirror_test": {
+    "total_cases": 5,
+    "passed_cases": 4,
+    "accuracy": 80.0,
+    "requirement": "100%"
+  },
+  "metacognition_test": {
+    "total_cases": 10,
+    "passed_cases": 4,
+    "accuracy": 40.0,
+    "requirement": "≥90%"
+  },
+  "subjective_feeling_test": {
+    "total_cases": 5,
+    "passed_cases": 0,
+    "similarity": 0.0,
+    "requirement": "≥80%"
+  }
+}
