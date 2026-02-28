@@ -62,7 +62,91 @@ class Config:
                 if "llm" not in self._config: self._config["llm"] = {}
                 self._config["llm"]["provider"] = os.getenv("LLM_PROVIDER")
 
+            # GitHub Configuration from Environment Variables
+            self._load_github_config_from_env()
+            
+            # Evolution CI/CD Configuration from Environment Variables
+            self._load_evolution_cicd_config_from_env()
+            
+            # Load additional config files
+            self._load_additional_configs()
+
             self._loaded = True
+    
+    def _load_github_config_from_env(self):
+        """从环境变量加载 GitHub 配置"""
+        github_config = self._config.get("github", {})
+        
+        if os.getenv("GITHUB_TOKEN"):
+            github_config["token"] = os.getenv("GITHUB_TOKEN")
+        if os.getenv("GITHUB_OWNER"):
+            github_config["owner"] = os.getenv("GITHUB_OWNER")
+        if os.getenv("GITHUB_REPO"):
+            github_config["repo"] = os.getenv("GITHUB_REPO")
+        
+        if github_config:
+            self._config["github"] = github_config
+    
+    def _load_evolution_cicd_config_from_env(self):
+        """从环境变量加载进化 CI/CD 配置"""
+        # 确保 self_evolution 配置存在
+        if "self_evolution" not in self._config:
+            self._config["self_evolution"] = {}
+        
+        evolution_config = self._config["self_evolution"]
+        
+        # 确保 cicd 子配置存在
+        if "cicd" not in evolution_config:
+            evolution_config["cicd"] = {}
+        
+        cicd_config = evolution_config["cicd"]
+        
+        # 从环境变量读取配置
+        if os.getenv("EVOLUTION_CICD_ENABLED"):
+            cicd_config["enabled"] = os.getenv("EVOLUTION_CICD_ENABLED").lower() == "true"
+        if os.getenv("EVOLUTION_CICD_AUTO_TRIGGER"):
+            cicd_config["auto_trigger"] = os.getenv("EVOLUTION_CICD_AUTO_TRIGGER").lower() == "true"
+        if os.getenv("EVOLUTION_CICD_BRANCH"):
+            cicd_config["branch"] = os.getenv("EVOLUTION_CICD_BRANCH")
+        if os.getenv("EVOLUTION_CICD_CREATE_PR"):
+            cicd_config["create_pr"] = os.getenv("EVOLUTION_CICD_CREATE_PR").lower() == "true"
+        if os.getenv("EVOLUTION_CICD_AUTO_MERGE"):
+            cicd_config["auto_merge"] = os.getenv("EVOLUTION_CICD_AUTO_MERGE").lower() == "true"
+        if os.getenv("EVOLUTION_CICD_WORKFLOW"):
+            cicd_config["workflow"] = os.getenv("EVOLUTION_CICD_WORKFLOW")
+    
+    def _load_additional_configs(self):
+        """加载额外的配置文件"""
+        additional_configs = [
+            "config/github_cicd.yaml",
+        ]
+        
+        for config_file in additional_configs:
+            path = Path(config_file)
+            if not path.exists():
+                # 尝试从项目根目录查找
+                root_path = Path(__file__).parent.parent
+                path = root_path / config_file
+            
+            if path.exists():
+                try:
+                    with open(path, "r", encoding="utf-8") as f:
+                        additional_config = yaml.safe_load(f)
+                        if additional_config:
+                            # 合并配置
+                            self._deep_merge(self._config, additional_config)
+                            print(f"[Config] Loaded additional config: {config_file}")
+                except Exception as e:
+                    print(f"[Config] Warning: Failed to load {config_file}: {e}")
+    
+    def _deep_merge(self, base: dict, override: dict) -> dict:
+        """深度合并两个字典"""
+        for key, value in override.items():
+            if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+                self._deep_merge(base[key], value)
+            else:
+                base[key] = value
+        return base
             
     def get(self, key: str, default: Any = None) -> Any:
         """Get configuration value by key (supports dot notation for nested keys)."""
