@@ -23,10 +23,10 @@ except ImportError:
 
 class LLMClient:
     """Wrapper for LLM Platform using LangChain ChatOpenAI.
-    Supports Coze and Volcengine Ark.
+    Supports Coze, Volcengine Ark, and Human-Level Brain.
     """
     
-    def __init__(self, api_key: str = None, base_url: str = None, model_name: str = None, provider: str = None):
+    def __init__(self, api_key: str = None, base_url: str = None, model_name: str = None, provider: str = None, **kwargs):
         """
         初始化 LLM 客户端
         
@@ -34,9 +34,15 @@ class LLMClient:
             api_key: API Key
             base_url: Base URL
             model_name: 模型名称
-            provider: 服务提供商 ("coze" or "ark"), 默认为 "coze"
+            provider: 服务提供商 ("coze", "ark", "brain"), 默认为 "coze"
+            **kwargs: 额外参数（Brain模式下使用: start_as_infant, identity）
         """
         self.provider = provider or os.getenv("LLM_PROVIDER", "coze")
+        
+        # Brain模式：使用人类级大脑
+        if self.provider == "brain":
+            self._init_brain_mode(**kwargs)
+            return
         
         if self.provider == "ark":
             self.api_key = api_key or os.getenv("ARK_API_KEY")
@@ -72,7 +78,17 @@ class LLMClient:
         
         # 交互样本保存路径
         self.dataset_path = "training/dataset.jsonl"
-        
+    
+    def _init_brain_mode(self, **kwargs):
+        """初始化Brain模式"""
+        try:
+            from src.utils.brain_llm_adapter import BrainLLMClient
+            self._brain_client = BrainLLMClient(**kwargs)
+            self.model_name = self._brain_client.model_name
+            logging.info(f"🧠 LLMClient已切换到Brain模式 | 模型: {self.model_name}")
+        except ImportError as e:
+            logging.error(f"Brain模块导入失败: {e}")
+            raise RuntimeError("无法初始化Brain模式，请确保src/brain和src/utils/brain_llm_adapter.py存在")
     def _extract_text_from_content(self, content: any) -> str:
         """Extract text from message content which could be string or list."""
         if isinstance(content, str):
@@ -178,6 +194,10 @@ class LLMClient:
         Returns:
             响应对象
         """
+        # Brain模式：使用人类级大脑
+        if self.provider == "brain":
+            return self._brain_client.generate(messages, stream=stream, temperature=temperature)
+        
         try:
             # 转换消息格式
             langchain_messages = self._convert_messages_to_langchain(messages)
@@ -235,6 +255,11 @@ class LLMClient:
         Yields:
             文本片段
         """
+        # Brain模式：使用人类级大脑
+        if self.provider == "brain":
+            yield from self._brain_client.stream_generate(messages, temperature=temperature)
+            return
+        
         try:
             # 转换消息格式
             langchain_messages = self._convert_messages_to_langchain(messages)
