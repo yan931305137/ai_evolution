@@ -96,7 +96,7 @@ def main():
     args = parser.parse_args()
     
     console.print("[bold green]Welcome to OpenClaw-Local (Doubao Evolution Edition)![/bold green]")
-    console.print("[dim]Type '/exit' to quit, '/agent' for manual task, '/auto' to toggle autonomy, '/evolve' to start self-evolution closed loop.[/dim]")
+    console.print("[dim]Type '/exit' to quit, '/agent' for manual task, '/auto' to toggle autonomy, '/evolve' to start self-evolution, '/reload' to check hot reload status.[/dim]")
     
     # Initialize Core Components
     db = Database()
@@ -113,6 +113,16 @@ def main():
     
     # 注册冒烟测试
     hot_reload_manager.register_smoke_test(core_smoke_test)
+    
+    # 启动热重载监听（后台线程）
+    try:
+        from src.utils.hot_reload_starter import start_hot_reload
+        if start_hot_reload(check_interval=3.0):
+            console.print("[dim]Hot reload enabled - monitoring file changes[/dim]")
+        else:
+            console.print("[dim]Hot reload not started - no modules registered[/dim]")
+    except Exception as e:
+        console.print(f"[yellow]Warning: Failed to start hot reload: {e}[/yellow]")
     
     # 函数：从热重载管理器获取最新模块实例
     def get_module(name):
@@ -173,6 +183,43 @@ def main():
                 
             if user_input.lower() == '/status':
                 console.print(f"[bold yellow]{lifecycle.get_status()}[/bold yellow]")
+                continue
+            
+            if user_input.lower() == '/reload':
+                # 显示热重载状态
+                from src.utils.hot_reload_starter import get_hot_reload_status
+                status = get_hot_reload_status()
+                
+                table = Table(title="Hot Reload Status", show_header=True)
+                table.add_column("Item", style="cyan")
+                table.add_column("Value", style="green")
+                
+                table.add_row("Running", "✅ Yes" if status['running'] else "❌ No")
+                table.add_row("Registered Modules", str(status['module_count']))
+                table.add_row("Reload Success", str(status['reload_success_count']))
+                table.add_row("Reload Failed", str(status['reload_fail_count']))
+                table.add_row("Last Reload Time", f"{status['last_reload_time']:.3f}s")
+                
+                if status['registered_modules']:
+                    table.add_row("Modules", ", ".join(status['registered_modules']))
+                
+                console.print(table)
+                
+                # 手动触发一次重载检查
+                if status['running']:
+                    console.print("[dim]Checking for module changes...[/dim]")
+                    from src.utils.hot_reload_manager import hot_reload_manager
+                    changed = hot_reload_manager.check_module_changes()
+                    if changed:
+                        console.print(f"[yellow]Detected changes in: {', '.join(changed)}[/yellow]")
+                        for module in changed:
+                            success, msg = hot_reload_manager.reload_module(module)
+                            if success:
+                                console.print(f"[green]✅ {msg}[/green]")
+                            else:
+                                console.print(f"[red]❌ {msg}[/red]")
+                    else:
+                        console.print("[dim]No changes detected[/dim]")
                 continue
 
             if user_input.lower().startswith('/agent '):
