@@ -29,14 +29,18 @@ FORBID_DELETE_PATH_PREFIXES = ["./core/", "./config/", "./data/*.db", "./skills/
 # 3. 定义规则常量：合法临时资源路径/类型
 LEGAL_TEMP_RESOURCE_FLAGS = ["./tmp/", ".tmp", ".cache", ".pyc", "__pycache__", ".pytest_cache"]
 
-def generation_content_compliance_check(file_path: str, content_type: str, is_temporary_resource: bool = False, scene_type: str = "production") -> Tuple[bool, Dict]:
+def generation_content_compliance_check(file_path: str, content_type: str, is_temporary_resource: bool = False, scene_type: str = "production", user_command_override: bool = False) -> Tuple[bool, Dict]:
     """
     生成内容合规性校验核心函数，执行存储路径校验和临时资源标记校验
+    
+    优先级规则：用户命令 > 紧急场景 > 常规规则
+    
     参数:
         file_path: 待生成/存储的文件完整路径
-        content_type: 内容类型，可选值：code_skill(通用可复用技能)/code_core(核心系统代码)/code_script(业务脚本)/code_test(测试用例)/data_system(系统运行数据)/data_training(训练相关数据)/output_report(分析报告)/output_temp(临时中间产物)/doc(文档类)
+        content_type: 内容类型，可选值：code_skill/code_core/code_script/code_test/data_system/data_training/output_report/output_temp/doc/design
         is_temporary_resource: 是否标记为可删除临时资源
         scene_type: 当前运行场景，可选值：production(生产运行)/dev_test(开发测试)/iteration(系统迭代)/emergency(紧急故障排查)
+        user_command_override: 用户命令覆盖标志，当为True时允许用户指定的任意路径（最高优先级）
     返回:
         (校验是否通过, 校验结果详情字典)
     """
@@ -46,6 +50,13 @@ def generation_content_compliance_check(file_path: str, content_type: str, is_te
         "violation_details": [],
         "suggestion": ""
     }
+    
+    # 最高优先级：用户命令覆盖
+    if user_command_override:
+        result["path_compliance"] = True
+        result["temp_tag_compliance"] = True
+        result["violation_details"].append("用户命令优先级：允许使用指定路径")
+        return True, result
     
     # 第一步：存储路径合规校验
     if content_type not in STORAGE_PATH_RULES:

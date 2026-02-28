@@ -202,17 +202,21 @@ def generation_content_compliance_check(
     file_path: str,
     content_type: str,
     is_temporary_resource: bool = False,
-    scene_type: str = "production"
+    scene_type: str = "production",
+    user_command_override: bool = False
 ) -> Tuple[bool, Dict]:
     """生成内容合规性校验核心函数
     
     执行存储路径校验和临时资源标记校验
+    
+    优先级规则：用户命令 > 紧急场景 > 常规规则
     
     参数:
         file_path: 待生成/存储的文件完整路径
         content_type: 内容类型
         is_temporary_resource: 是否标记为可删除临时资源
         scene_type: 当前运行场景
+        user_command_override: 用户命令覆盖标志，当为True时允许用户指定的任意路径（最高优先级）
     
     返回:
         (校验是否通过, 校验结果详情)
@@ -237,6 +241,13 @@ def generation_content_compliance_check(
         "violation_details": [],
         "suggestion": ""
     }
+    
+    # 最高优先级：用户命令覆盖
+    if user_command_override:
+        result["path_compliance"] = True
+        result["temp_tag_compliance"] = True
+        result["violation_details"].append("用户命令优先级：允许使用指定路径")
+        return True, result
     
     # 检查内容类型
     if content_type not in STORAGE_PATH_RULES:
