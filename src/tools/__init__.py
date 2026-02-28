@@ -123,7 +123,7 @@ class Tools:
             "27. analyze_change_impact(file_path, change_description): Analyze the impact of a code change - shows which files depend on the modified file.",
             "28. get_code_summary(file_path, max_lines=50): Get a summary of a code file: imports, definitions, and first 50 lines of actual code.",
             # Directory tools
-            "29. mkdir(directory_path, exist_ok=True, parents=True): Create a directory.",
+            "29. mkdir(directory_path, exist_ok=True, parents=True): Create a directory. IMPORTANT: This is a Python function, NOT a shell command. Does NOT support brace expansion like {a,b,c}. Create multiple directories by calling mkdir separately for each.",
             "30. rmdir(directory_path, recursive=False): Remove a directory.",
             "31. get_dir_info(directory_path='.'): Get detailed directory information: file count, size, file type distribution.",
             "32. list_dir_tree(directory_path='.', max_depth=3): Display directory structure as a tree.",

@@ -14,13 +14,21 @@ def mkdir(directory_path: str, exist_ok: bool = True, parents: bool = True) -> s
     """
     创建目录
     
+    重要说明：这是 Python 函数，不是 shell 命令。
+    不支持 shell 的 brace expansion（如 {a,b,c}），如需创建多个目录请分别调用。
+    
     Args:
-        directory_path: 要创建的目录路径
+        directory_path: 要创建的目录路径，例如："src/brain/memory"
         exist_ok: 如果目录已存在是否忽略错误
         parents: 是否自动创建父目录
     
     Returns:
         操作结果描述
+    
+    Examples:
+        >>> mkdir("src/brain/memory")
+        >>> mkdir("src/brain/perception")
+        # 错误用法（不支持）：mkdir("src/brain/{memory,perception}")
     """
     try:
         path = Path(directory_path)
