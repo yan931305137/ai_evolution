@@ -1,7 +1,7 @@
 """
 决策模块：基于感知输入、注意力筛选的重要信息和记忆检索结果，生成可行决策选项并选择最优决策
 """
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 
 class DecisionModule:
     def __init__(self):
