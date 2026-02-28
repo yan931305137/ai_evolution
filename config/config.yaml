@@ -112,6 +112,13 @@ agent:
     - "实现"
     - "部署"
     - "测试"
+  
+  # Context Compression Configuration
+  context:
+    max_messages: 20           # 最大保留消息数
+    max_tokens: 8000           # 最大 Token 数（约等于上下文窗口的80%）
+    compress_threshold: 15     # 触发压缩的消息数阈值
+    summary_length: 200        # 摘要长度（字符）
 
 # Self-Evolution Configuration
 self_evolution:

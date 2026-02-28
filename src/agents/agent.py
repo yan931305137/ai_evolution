@@ -8,6 +8,7 @@ from src.storage.memory import memory # Import memory system
 from src.utils.self_awareness import SelfAwarenessSystem # Import self-awareness system
 from src.utils.user_profile import user_profile_manager # Import user profile system
 from src.utils.config import cfg # Import configuration
+from src.utils.context_compressor import ContextCompressor # Import context compressor
 from rich.console import Console
 import os
 import sys
@@ -26,6 +27,14 @@ class AutoAgent:
         self.max_steps = cfg.get("agent.max_steps", 10000) # Load from config
         self.tools_desc = Tools.get_tool_descriptions()
         self.self_awareness = SelfAwarenessSystem() # Initialize self-awareness system
+        
+        # 初始化上下文压缩器
+        self.context_compressor = ContextCompressor(
+            max_messages=cfg.get("agent.context.max_messages", 20),
+            max_tokens=cfg.get("agent.context.max_tokens", 8000),
+            compress_threshold=cfg.get("agent.context.compress_threshold", 15),
+            summary_length=cfg.get("agent.context.summary_length", 200)
+        )
 
     def _retrieve_memory_context(self, goal: str) -> str:
         """Retrieve relevant memories based on the goal."""
@@ -164,6 +173,17 @@ EFFICIENT WORKFLOW:
             # 1. Get LLM Response (Streaming)
             console.print("[bold cyan]AI Thought Process:[/bold cyan]")
             
+            # 检查是否需要压缩上下文
+            if self.context_compressor.should_compress(messages):
+                console.print("[dim yellow]Context growing, compressing...[/dim yellow]")
+                messages = self.context_compressor.compress(messages)
+                stats = self.context_compressor.get_stats()
+                console.print(
+                    f"[dim green]Compressed: {stats.original_messages} -> "
+                    f"{stats.compressed_messages} msgs "
+                    f"({stats.compression_ratio:.0%} reduction)[/dim green]"
+                )
+            
             try:
                 content = self._get_llm_response(messages)
             except Exception as e:
@@ -197,10 +217,24 @@ EFFICIENT WORKFLOW:
                 console.print(f"[bold green]Action:[/bold green] {action}({action_input}) (重复次数: {repeat_count}/{max_repeat_actions})")
                 
             except (json.JSONDecodeError, AttributeError) as e:
-                console.print(f"[red]Error parsing JSON response:[/red] {content}")
-                # Feedback loop to LLM to correct format
+                console.print(f"[red]Error parsing JSON response:[/red] {content[:200]}...")
+                # 更详细的错误反馈
+                error_feedback = """Error: Your response was not valid JSON. 
+You MUST respond ONLY with a valid JSON object in this exact format:
+{
+    "thought": "Your step-by-step reasoning here",
+    "action": "tool_name_here",
+    "action_input": {"key": "value"}
+}
+
+Do NOT include:
+- Markdown formatting (no ```json blocks)
+- Conversational text
+- Any text outside the JSON object
+
+Your entire response should be parseable by json.loads()."""
                 messages.append({"role": "assistant", "content": content})
-                messages.append({"role": "user", "content": "Error: Your response was not valid JSON. Please provide ONLY the JSON object."})
+                messages.append({"role": "user", "content": error_feedback})
                 continue
 
             # 3. Execute Tool

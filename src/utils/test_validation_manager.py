@@ -88,9 +88,20 @@ class TestValidationManager:
                 # 避免除零错误
                 if test_result.total_cases > 0:
                     pass_rate = test_result.passed_cases / test_result.total_cases * 100
-                    error_msg = f"{reload_msg}，全量测试不通过，通过率{pass_rate:.1f}%，覆盖率{test_result.coverage_rate:.1f}%"
+                    
+                    # 分析具体失败原因
+                    if test_result.failed_cases > 0:
+                        failure_reason = f"有{test_result.failed_cases}个测试失败"
+                    elif pass_rate < self.pass_rate_threshold:
+                        failure_reason = f"通过率{pass_rate:.1f}%低于要求{self.pass_rate_threshold}%"
+                    elif test_result.coverage_rate < self.coverage_threshold:
+                        failure_reason = f"覆盖率{test_result.coverage_rate:.1f}%低于要求{self.coverage_threshold}%"
+                    else:
+                        failure_reason = "未达到通过标准"
+                    
+                    error_msg = f"{reload_msg}，校验未通过：{failure_reason}（通过率{pass_rate:.1f}%，覆盖率{test_result.coverage_rate:.1f}%）"
                 else:
-                    error_msg = f"{reload_msg}，全量测试不通过，无测试用例，覆盖率{test_result.coverage_rate:.1f}%"
+                    error_msg = f"{reload_msg}，校验未通过：无测试用例（覆盖率{test_result.coverage_rate:.1f}%）"
                 logger.error(error_msg)
                 return False, error_msg
 
