@@ -118,19 +118,19 @@ class TestTaskReviewTool:
         tool = TaskExecutionReviewTool(test_log_data)
         records = tool._filter_by_time_range(datetime(2026,2,1), datetime(2026,2,28,23,59,59))
         stats = tool._calculate_tool_usage_stats(records)
-        # 总调用15次，失败3次（id4,6,10），成功12次，成功率80%
+        # 总调用15次，失败4次（id4,6,10,13），成功11次，成功率73.33%
         assert stats['total_calls'] == 15
-        assert stats['success_calls'] == 12
-        assert stats['failed_calls'] == 3
-        assert stats['success_rate'] == 80.0
+        assert stats['success_calls'] == 11
+        assert stats['failed_calls'] == 4
+        assert stats['success_rate'] == round(11/15*100, 2)
 
     def test_calculate_tool_usage_stats_gap_recognition(self, test_log_data):
         """测试场景11：工具缺口识别正确"""
         tool = TaskExecutionReviewTool(test_log_data)
         records = tool._filter_by_time_range(datetime(2026,2,1), datetime(2026,2,28,23,59,59))
         stats = tool._calculate_tool_usage_stats(records)
-        # 共有6个工具缺口场景
-        assert len(stats['tool_gap_scenarios']) == 6
+        # 共有7个工具缺口场景
+        assert len(stats['tool_gap_scenarios']) == 7
 
     def test_calculate_time_distribution(self, test_log_data):
         """测试场景12：耗时分布计算正常"""
