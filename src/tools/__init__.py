@@ -17,6 +17,8 @@ from .json_yaml_tools import read_json, write_json, update_json, read_yaml, writ
 from .text_processing_tools import find_in_files, replace_in_files, count_lines, extract_strings
 from .agent_tools import spawn_agent, delegate_task, list_spawned_agents, get_agent_info, terminate_agent, spawn_agents_for_project
 from .cicd_tools import trigger_ci_pipeline, check_ci_status, get_ci_logs, create_pr_from_branch, merge_pull_request, run_evolution_ci_pipeline
+from .security_tools import scan_code_for_secrets, check_text_security, sanitize_sensitive_data, validate_pr_content, check_commit_message_safety, run_pre_commit_check, get_security_rules_info
+from .docs_tools import update_project_docs, check_readme_compliance, check_gitignore_complete, update_readme_badges
 
 class Tools:
     """Collection of tools for the AI agent to interact with the local system."""
@@ -98,6 +100,19 @@ class Tools:
     create_pr_from_branch = staticmethod(create_pr_from_branch)
     merge_pull_request = staticmethod(merge_pull_request)
     run_evolution_ci_pipeline = staticmethod(run_evolution_ci_pipeline)
+    # Security tools
+    scan_code_for_secrets = staticmethod(scan_code_for_secrets)
+    check_text_security = staticmethod(check_text_security)
+    sanitize_sensitive_data = staticmethod(sanitize_sensitive_data)
+    validate_pr_content = staticmethod(validate_pr_content)
+    check_commit_message_safety = staticmethod(check_commit_message_safety)
+    run_pre_commit_check = staticmethod(run_pre_commit_check)
+    get_security_rules_info = staticmethod(get_security_rules_info)
+    # Documentation tools
+    update_project_docs = staticmethod(update_project_docs)
+    check_readme_compliance = staticmethod(check_readme_compliance)
+    check_gitignore_complete = staticmethod(check_gitignore_complete)
+    update_readme_badges = staticmethod(update_readme_badges)
 
     @classmethod
     def get_tool_descriptions(cls) -> str:
@@ -183,6 +198,19 @@ class Tools:
             "64. create_pr_from_branch(branch, title, body=None, base_branch='main'): Create a Pull Request from a branch.",
             "65. merge_pull_request(pr_number, commit_message=None): Merge a Pull Request.",
             "66. run_evolution_ci_pipeline(evolution_branch='evolution', create_pr=True, auto_merge=False): Complete CI/CD pipeline for evolution changes including test, PR creation, and optional auto-merge.",
+            # Security tools
+            "67. scan_code_for_secrets(file_paths=None, scan_all=False, max_critical=0, max_high=0): Scan code for secrets and sensitive data. Returns scan results with findings.",
+            "68. check_text_security(text): Check if text contains sensitive information like API keys or passwords.",
+            "69. sanitize_sensitive_data(text): Remove sensitive data from text for safe logging.",
+            "70. validate_pr_content(title, body, branch=''): Validate PR title and body for security issues before creating PR.",
+            "71. check_commit_message_safety(message): Check if commit message contains sensitive information.",
+            "72. run_pre_commit_check(): Run pre-commit security check on staged files.",
+            "73. get_security_rules_info(): Get information about security scanning rules.",
+            # Documentation tools
+            "74. update_project_docs(test_results=None, new_features=None): Update README badges and check .gitignore before CI/CD.",
+            "75. check_readme_compliance(): Check if README.md meets GitHub standards and return compliance score.",
+            "76. check_gitignore_complete(): Check if .gitignore has all required security rules.",
+            "77. update_readme_badges(test_status='passing', coverage='85%', security='audit passed'): Update README badge status.",
         ]
         
         # 2. Dynamic Skills from src.tools.skills

@@ -6,13 +6,14 @@ GitHub CI/CD 集成模块
 - 监听构建状态
 - 获取构建日志
 - 自动合并 PR
+- 敏感信息安全检查
 """
 import os
 import time
 import json
 import logging
 import requests
-from typing import Dict, List, Optional, Any, Callable
+from typing import Dict, List, Optional, Any, Callable, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -45,6 +46,22 @@ class ConclusionStatus(Enum):
 
 
 @dataclass
+class SecurityCheckResult:
+    """安全检查结果"""
+    passed: bool
+    issues: List[str]
+    sanitized_content: Optional[str] = None
+    
+    def to_dict(self) -> dict:
+        return {
+            "passed": self.passed,
+            "issues_count": len(self.issues),
+            "issues": self.issues[:10] if self.issues else [],  # 最多显示10个
+            "has_more_issues": len(self.issues) > 10
+        }
+
+
+@dataclass
 class WorkflowRun:
     """工作流运行记录"""
     run_id: int
@@ -69,6 +86,7 @@ class CICDResult:
     duration_seconds: float
     summary: str
     details: Dict[str, Any] = field(default_factory=dict)
+    security_check: Optional[SecurityCheckResult] = None
 
 
 class GitHubCICDIntegration:
@@ -114,6 +132,122 @@ class GitHubCICDIntegration:
     def is_configured(self) -> bool:
         """检查是否已配置"""
         return bool(self.token and self.owner and self.repo)
+    
+    def _load_security_scanner(self):
+        """延迟加载安全扫描器"""
+        try:
+            from src.utils.security_scanner import SecurityScanner
+            return SecurityScanner()
+        except ImportError:
+            logger.warning("Security scanner not available")
+            return None
+    
+    def check_content_security(
+        self,
+        content: str,
+        content_type: str = "text"
+    ) -> SecurityCheckResult:
+        """
+        检查内容安全性（防止敏感信息泄露）
+        
+        Args:
+            content: 要检查的内容
+            content_type: 内容类型 (text, commit_message, pr_body, etc.)
+            
+        Returns:
+            SecurityCheckResult: 检查结果
+        """
+        scanner = self._load_security_scanner()
+        if not scanner:
+            # 安全扫描器不可用，默认通过但警告
+            return SecurityCheckResult(
+                passed=True,
+                issues=["Security scanner not available - manual review recommended"]
+            )
+        
+        try:
+            # 检查文本中的敏感信息
+            findings = scanner.scan_text(content)
+            
+            if not findings:
+                return SecurityCheckResult(
+                    passed=True,
+                    issues=[]
+                )
+            
+            # 处理发现的问题
+            issues = []
+            has_critical = False
+            
+            for finding in findings:
+                issue = f"[{finding.severity.value}] {finding.pattern_name}: {finding.matched_text}"
+                issues.append(issue)
+                if finding.severity.value == "CRITICAL":
+                    has_critical = True
+            
+            # 清理敏感内容
+            sanitized = scanner.sanitize_for_logging(content)
+            
+            return SecurityCheckResult(
+                passed=not has_critical,  # 有 CRITICAL 则失败
+                issues=issues,
+                sanitized_content=sanitized
+            )
+            
+        except Exception as e:
+            logger.error(f"Security check failed: {e}")
+            return SecurityCheckResult(
+                passed=False,
+                issues=[f"Security check error: {str(e)}"]
+            )
+    
+    def check_pr_security(
+        self,
+        title: str,
+        body: str,
+        branch: str
+    ) -> SecurityCheckResult:
+        """
+        检查 PR 的安全性
+        
+        Args:
+            title: PR 标题
+            body: PR 内容
+            branch: 分支名
+            
+        Returns:
+            SecurityCheckResult: 检查结果
+        """
+        all_issues = []
+        
+        # 检查标题
+        title_check = self.check_content_security(title, "pr_title")
+        if title_check.issues:
+            all_issues.extend([f"[Title] {issue}" for issue in title_check.issues])
+        
+        # 检查内容
+        body_check = self.check_content_security(body, "pr_body")
+        if body_check.issues:
+            all_issues.extend([f"[Body] {issue}" for issue in body_check.issues])
+        
+        # 检查分支名（可能包含敏感信息）
+        branch_check = self.check_content_security(branch, "branch_name")
+        if branch_check.issues:
+            all_issues.extend([f"[Branch] {issue}" for issue in branch_check.issues])
+        
+        has_critical = any("[CRITICAL]" in issue for issue in all_issues)
+        
+        return SecurityCheckResult(
+            passed=not has_critical and len(all_issues) < 5,  # 少量非关键问题允许
+            issues=all_issues
+        )
+    
+    def sanitize_for_logs(self, text: str) -> str:
+        """清理日志中的敏感信息"""
+        scanner = self._load_security_scanner()
+        if scanner:
+            return scanner.sanitize_for_logging(text)
+        return text
     
     def trigger_workflow(
         self,
@@ -337,22 +471,46 @@ class GitHubCICDIntegration:
         title: str,
         body: str,
         head_branch: str,
-        base_branch: str = "main"
-    ) -> Optional[int]:
+        base_branch: str = "main",
+        skip_security_check: bool = False
+    ) -> Tuple[Optional[int], Optional[SecurityCheckResult]]:
         """
-        创建 Pull Request
+        创建 Pull Request（带安全检查）
         
         Args:
             title: PR 标题
             body: PR 内容
             head_branch: 源分支
             base_branch: 目标分支
+            skip_security_check: 是否跳过安全检查（危险！）
             
         Returns:
-            PR 编号
+            Tuple[Optional[int], Optional[SecurityCheckResult]]: (PR编号, 安全检查结果)
         """
         if not self.is_configured():
-            return None
+            return None, None
+        
+        # 安全检查
+        security_result = None
+        if not skip_security_check:
+            security_result = self.check_pr_security(title, body, head_branch)
+            
+            if not security_result.passed:
+                logger.error(f"❌ Security check failed for PR creation!")
+                for issue in security_result.issues:
+                    logger.error(f"   - {issue}")
+                
+                # 可以选择抛出异常或返回失败
+                if cfg.get("github.security.block_on_failure", True):
+                    return None, security_result
+                else:
+                    logger.warning("Security check failed but block_on_failure is disabled")
+                    # 在 PR body 中添加安全警告
+                    body = self._add_security_warning(body, security_result)
+        
+        # 清理日志中的敏感信息
+        safe_title = self.sanitize_for_logs(title)
+        logger.info(f"Creating PR: {safe_title}")
         
         try:
             url = f"{self.api_base}/repos/{self.owner}/{self.repo}/pulls"
@@ -367,27 +525,55 @@ class GitHubCICDIntegration:
             
             if response.status_code == 201:
                 pr_number = response.json()["number"]
-                logger.info(f"PR #{pr_number} created: {title}")
-                return pr_number
+                logger.info(f"✅ PR #{pr_number} created: {safe_title}")
+                return pr_number, security_result
             else:
-                logger.error(f"Failed to create PR: {response.status_code} - {response.text}")
-                return None
+                # 清理错误信息中的敏感内容
+                safe_error = self.sanitize_for_logs(response.text)
+                logger.error(f"Failed to create PR: {response.status_code} - {safe_error}")
+                return None, security_result
                 
         except Exception as e:
-            logger.error(f"Error creating PR: {e}")
-            return None
+            safe_error = self.sanitize_for_logs(str(e))
+            logger.error(f"Error creating PR: {safe_error}")
+            return None, security_result
+    
+    def _add_security_warning(
+        self,
+        body: str,
+        security_result: SecurityCheckResult
+    ) -> str:
+        """在 PR body 中添加安全警告"""
+        warning = """
+
+## ⚠️ Security Warning
+
+This PR has potential security concerns that were detected during automated scanning:
+
+"""
+        for issue in security_result.issues[:5]:  # 最多显示5个
+            warning += f"- {issue}\n"
+        
+        if len(security_result.issues) > 5:
+            warning += f"- ... and {len(security_result.issues) - 5} more issues\n"
+        
+        warning += "\nPlease review carefully before merging."
+        
+        return body + warning
     
     def merge_pr(
         self,
         pr_number: int,
-        commit_message: Optional[str] = None
+        commit_message: Optional[str] = None,
+        check_security_approval: bool = True
     ) -> bool:
         """
-        合并 Pull Request
+        合并 Pull Request（带安全检查）
         
         Args:
             pr_number: PR 编号
             commit_message: 提交信息
+            check_security_approval: 是否检查安全审批
             
         Returns:
             是否成功
@@ -395,23 +581,37 @@ class GitHubCICDIntegration:
         if not self.is_configured():
             return False
         
+        # 检查提交信息安全性
+        if commit_message:
+            security_check = self.check_content_security(commit_message, "commit_message")
+            if not security_check.passed:
+                logger.error(f"❌ Commit message failed security check!")
+                for issue in security_check.issues:
+                    logger.error(f"   - {issue}")
+                
+                if cfg.get("github.security.block_on_failure", True):
+                    return False
+        
         try:
             url = f"{self.api_base}/repos/{self.owner}/{self.repo}/pulls/{pr_number}/merge"
             data = {}
             if commit_message:
-                data["commit_message"] = commit_message
+                # 清理提交信息
+                data["commit_message"] = self.sanitize_for_logs(commit_message)
             
             response = requests.put(url, headers=self.headers, json=data)
             
             if response.status_code == 200:
-                logger.info(f"PR #{pr_number} merged successfully")
+                logger.info(f"✅ PR #{pr_number} merged successfully")
                 return True
             else:
-                logger.error(f"Failed to merge PR: {response.status_code} - {response.text}")
+                safe_error = self.sanitize_for_logs(response.text)
+                logger.error(f"Failed to merge PR: {response.status_code} - {safe_error}")
                 return False
                 
         except Exception as e:
-            logger.error(f"Error merging PR: {e}")
+            safe_error = self.sanitize_for_logs(str(e))
+            logger.error(f"Error merging PR: {safe_error}")
             return False
     
     def run_full_pipeline(
@@ -455,10 +655,16 @@ class GitHubCICDIntegration:
             title = pr_title or f"Auto: Evolution changes from {datetime.now().strftime('%Y-%m-%d')}"
             body = pr_body or "This PR contains automated evolution changes.\n\nCI Status: ✅ Passed"
             
-            pr_number = self.create_pr(title, body, branch)
+            pr_number, security_result = self.create_pr(title, body, branch)
+            
             if pr_number:
                 result.details["pr_number"] = pr_number
                 result.details["pr_url"] = f"https://github.com/{self.owner}/{self.repo}/pull/{pr_number}"
+            
+            if security_result:
+                result.security_check = security_result
+                if not security_result.passed:
+                    result.summary += " (Security issues detected)"
         
         return result
 

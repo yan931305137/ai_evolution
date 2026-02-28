@@ -131,7 +131,7 @@ def delegate_task(agent_id: str, subtask: str, context: Optional[dict] = None) -
         factory.update_agent_stats(agent_id, result.success)
         
         # 存储到记忆
-        memory.add(
+        memory.add_memory(
             f"Agent {agent_id} executed: {subtask}\nResult: {result.output[:200]}",
             metadata={
                 "agent_id": agent_id,

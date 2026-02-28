@@ -16,11 +16,11 @@ llm:
   # ============================================
   
   # ark
-  # api_key: "21ba1178-abe6-4b34-9e83-f46b2af0e057"
-  # base_url: "https://ark.cn-beijing.volces.com/api/v3"
+  # api_key: ""
+  # base_url: ""
   
   # coze
-  # api_key: "UVhibGNLSDA1ZVk3SUJVV0xKaGxmOEVmdkhTOUZNbXA6QVp2OG1CdU1IVFFmRDdOc2xZSkpFd2lrdmVvTFdyWjdmb0Mzc25XZFBMOUgwaXJFR1p3NFRKS1gzUnV2enU2NA=="
+  # api_key: ""
   # base_url: "https://integration.coze.cn/api/v3"
 
   model_name: doubao-seed-2-0-pro-260215
@@ -181,7 +181,7 @@ self_evolution:
   
   # CI/CD Integration
   cicd:
-    enabled: false              # 启用 CI/CD 自动化
+    enabled: true              # 启用 CI/CD 自动化
     auto_trigger: true          # 应用阶段后自动触发
     branch: "evolution"         # 进化分支名称
     create_pr: true             # 成功后自动创建 PR

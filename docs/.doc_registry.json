@@ -291,6 +291,159 @@
       "related_files": [],
       "auto_delete": true,
       "last_verified_at": "2026-03-01T01:53:52.961245"
+    },
+    "doc_49bb4361": {
+      "doc_id": "doc_49bb4361",
+      "path": "docs/cicd_assessment_report.md",
+      "title": "CI/CD体系全面评估报告",
+      "task_id": "task_9946d9b1",
+      "created_at": "2026-03-01T03:27:28.511433",
+      "ttl_days": 7,
+      "status": "active",
+      "doc_type": "analysis",
+      "related_files": [
+        {
+          "path": "tests/code_generation/test_code_generation_cases.py",
+          "hash": "d1f6acb3"
+        },
+        {
+          "path": "tests/information_retrieval/test_retrieval_cases.py",
+          "hash": "ce14a7f7"
+        },
+        {
+          "path": "tests/multi_step_planning/test_planning_cases.py",
+          "hash": "92e9434c"
+        }
+      ],
+      "auto_delete": true,
+      "last_verified_at": "2026-03-01T03:27:28.511440"
+    },
+    "doc_92a3b11e": {
+      "doc_id": "doc_92a3b11e",
+      "path": "./data/config/ci-cd-pipeline.yml",
+      "title": "优化后核心CI/CD流水线配置",
+      "task_id": "task_4b05d182",
+      "created_at": "2026-03-01T03:55:34.525440",
+      "ttl_days": -1,
+      "status": "active",
+      "doc_type": "config",
+      "related_files": [],
+      "auto_delete": false,
+      "last_verified_at": "2026-03-01T03:55:34.525443"
+    },
+    "doc_27a25cf3": {
+      "doc_id": "doc_27a25cf3",
+      "path": "./data/config/github-env-config-guide.md",
+      "title": "GitHub Actions环境变量配置指引",
+      "task_id": "task_4b05d182",
+      "created_at": "2026-03-01T03:57:00.092781",
+      "ttl_days": 30,
+      "status": "active",
+      "doc_type": "standard",
+      "related_files": [],
+      "auto_delete": false,
+      "last_verified_at": "2026-03-01T03:57:00.092784"
+    },
+    "doc_b1929105": {
+      "doc_id": "doc_b1929105",
+      "path": "docs/cicd_support_features_design.md",
+      "title": "CI/CD配套功能设计方案",
+      "task_id": "task_091ad223",
+      "created_at": "2026-03-01T03:59:38.701539",
+      "ttl_days": 14,
+      "status": "active",
+      "doc_type": "design",
+      "related_files": [],
+      "auto_delete": true,
+      "last_verified_at": "2026-03-01T03:59:38.701542"
+    },
+    "doc_9492b134": {
+      "doc_id": "doc_9492b134",
+      "path": "docs/CI_CD_USER_MANUAL_V2.0.md",
+      "title": "CI/CD使用手册V2.0",
+      "task_id": "task_d52c2fb5",
+      "created_at": "2026-03-01T04:11:56.513421",
+      "ttl_days": 30,
+      "status": "active",
+      "doc_type": "standard",
+      "related_files": [
+        {
+          "path": "docs/GITHUB_CICD_INTEGRATION.md",
+          "hash": "e6f40ec7"
+        },
+        {
+          "path": "config/github_cicd.yaml",
+          "hash": "8868a876"
+        }
+      ],
+      "auto_delete": false,
+      "last_verified_at": "2026-03-01T04:11:56.513427"
+    },
+    "doc_d5e82ff4": {
+      "doc_id": "doc_d5e82ff4",
+      "path": "docs/CI_CD_TROUBLESHOOTING_GUIDE.md",
+      "title": "CI/CD故障排查指南",
+      "task_id": "task_d52c2fb5",
+      "created_at": "2026-03-01T04:12:07.411379",
+      "ttl_days": 30,
+      "status": "active",
+      "doc_type": "standard",
+      "related_files": [
+        {
+          "path": "docs/CI_CD_USER_MANUAL_V2.0.md",
+          "hash": "7b324ff8"
+        }
+      ],
+      "auto_delete": false,
+      "last_verified_at": "2026-03-01T04:12:07.411386"
+    },
+    "doc_f7af4cc2": {
+      "doc_id": "doc_f7af4cc2",
+      "path": "docs/CI_CD_NEW_FEATURE_TUTORIAL.md",
+      "title": "CI/CD新功能操作教程",
+      "task_id": "task_d52c2fb5",
+      "created_at": "2026-03-01T04:12:14.075315",
+      "ttl_days": 30,
+      "status": "active",
+      "doc_type": "standard",
+      "related_files": [
+        {
+          "path": "docs/CI_CD_USER_MANUAL_V2.0.md",
+          "hash": "7b324ff8"
+        },
+        {
+          "path": "docs/CI_CD_TROUBLESHOOTING_GUIDE.md",
+          "hash": "ffb96472"
+        }
+      ],
+      "auto_delete": false,
+      "last_verified_at": "2026-03-01T04:12:14.075322"
+    },
+    "doc_e9f89b04": {
+      "doc_id": "doc_e9f89b04",
+      "path": "docs/CI_CD_DEMAND_RESPONSE_SLA.md",
+      "title": "CI/CD需求响应SLA规范",
+      "task_id": "task_2d30da2f",
+      "created_at": "2026-03-01T04:15:02.344274",
+      "ttl_days": 30,
+      "status": "active",
+      "doc_type": "standard",
+      "related_files": [
+        {
+          "path": "docs/CI_CD_USER_MANUAL_V2.0.md",
+          "hash": "7b324ff8"
+        },
+        {
+          "path": "docs/CI_CD_TROUBLESHOOTING_GUIDE.md",
+          "hash": "ffb96472"
+        },
+        {
+          "path": "docs/CI_CD_NEW_FEATURE_TUTORIAL.md",
+          "hash": "a664eea9"
+        }
+      ],
+      "auto_delete": false,
+      "last_verified_at": "2026-03-01T04:15:02.344283"
     }
   }
 }

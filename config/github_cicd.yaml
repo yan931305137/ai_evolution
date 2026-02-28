@@ -18,6 +18,22 @@ github:
   # 仓库名称
   repo: null
   
+  # 安全设置
+  security:
+    # 安全检查失败时是否阻止操作
+    # true = 发现敏感信息时阻止提交/PR
+    # false = 仅警告，不阻止
+    block_on_failure: true
+    
+    # 是否在日志中自动清理敏感信息
+    sanitize_logs: true
+    
+    # PR 创建前强制安全检查
+    require_security_check_before_pr: true
+    
+    # 提交信息强制安全检查
+    require_security_check_for_commits: true
+  
   # 注意: 以上配置也可以通过环境变量设置:
   # GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO
 
@@ -64,6 +80,25 @@ self_evolution:
     
     # 轮询间隔（秒）
     poll_interval: 10
+    
+    # 安全设置
+    security:
+      # CI/CD 触发前是否运行安全扫描
+      enable_security_scan: true
+      
+      # 安全扫描失败时是否阻止 CI/CD
+      # true = 发现敏感信息时不触发 CI/CD
+      # false = 仅警告，继续 CI/CD
+      block_on_failure: true
+      
+      # 允许的最大关键问题数（0 = 不允许任何问题）
+      max_critical_issues: 0
+      
+      # 允许的最大高危问题数
+      max_high_issues: 0
+      
+      # 是否在 PR 中添加安全扫描报告
+      include_scan_report_in_pr: true
 
 # ============================================
 # PR 模板配置
@@ -87,6 +122,7 @@ pr_template:
     - [x] All tests passing
     - [x] Code quality checks passed
     - [x] No breaking changes introduced
+    - [x] Security scan passed
     
     ---
     *This PR was automatically created by the Evolution Feedback Loop*
@@ -100,3 +136,4 @@ callbacks:
   
   # 是否在完成时打印详细结果
   log_completion_details: true
+

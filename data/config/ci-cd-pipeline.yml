@@ -1,0 +1,206 @@
+# 全链路工程化自动化流水线配置
+# 触发条件：代码推送到main/dev分支、创建PR时自动执行
+name: 全流程自动化CI/CD流水线
+
+on:
+ push:
+ branches: [ main, dev ]
+ pull_request:
+ branches: [ main, dev ]
+
+# 全局环境变量配置
+env:
+ PYTHON_VERSION: '3.10'
+ DOCKER_REGISTRY: 'registry.cn-hangzhou.aliyuncs.com' # 可替换为自己的镜像仓库地址
+ DOCKER_IMAGE_NAME: ${{ secrets.DOCKER_IMAGE_NAME }}
+ TEST_SERVER_HOST: ${{ secrets.TEST_SERVER_HOST }}
+ TEST_SERVER_USER: ${{ secrets.TEST_SERVER_USER }}
+ COSIGN_EXPERIMENTAL: '1' # 开启cosign keyless签名
+
+# 全局最小权限管控：默认所有job仅具备读权限，特殊权限单独配置
+permissions:
+ contents: read
+ packages: read
+ id-token: write # 用于cosign签名身份校验
+
+jobs:
+ # 第一阶段：代码质量校验与单元测试
+ test:
+ runs-on: ubuntu-latest
+ steps:
+ # 1. 检出代码
+ - name: 检出项目代码
+ uses: actions/checkout@v4
+
+ # 2. 配置Python环境
+ - name: 配置Python${{ env.PYTHON_VERSION }}环境
+ uses: actions/setup-python@v5
+ with:
+ python-version: ${{ env.PYTHON_VERSION }}
+
+ # 3. 配置pip依赖缓存，大幅降低依赖安装耗时
+ - name: 配置pip依赖缓存
+ uses: actions/cache@v3
+ with:
+ path: ~/.cache/pip
+ key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+ restore-keys: |
+ ${{ runner.os }}-pip-
+
+ # 4. 安装项目依赖
+ - name: 安装项目依赖
+ run: |
+ python -m pip install --upgrade pip
+ pip install -r requirements.txt
+ pip install pytest pytest-cov safety pip-audit bandit
+
+ # 5. 执行单元测试，校验代码功能正确性
+ - name: 执行单元测试并生成覆盖率报告
+ run: |
+ pytest tests/ --cov=./ --cov-report=xml --cov-fail-under=80
+ env:
+ TZ: Asia/Shanghai
+
+ # 6. 新增：静态代码扫描（核心安全能力）
+ - name: 执行Python代码静态安全扫描
+ run: |
+ bandit -r src/ -f json -o bandit-report.json -ll
+ env:
+ TZ: Asia/Shanghai
+
+ # 7. 上传测试覆盖率报告，用于后续质量分析
+ - name: 上传测试覆盖率报告
+ uses: actions/upload-artifact@v4
+ with:
+ name: coverage-report
+ path: coverage.xml
+ if: always() # 即使测试失败也上传报告用于排查
+
+ # 8. 上传静态代码扫描报告
+ - name: 上传静态代码扫描报告
+ uses: actions/upload-artifact@v4
+ with:
+ name: bandit-report
+ path: bandit-report.json
+ if: always()
+
+ # 第二阶段：敏感信息扫描
+ secrets-scan:
+ runs-on: ubuntu-latest
+ steps:
+ - name: 检出项目代码
+ uses: actions/checkout@v4
+
+ - name: 配置Python${{ env.PYTHON_VERSION }}环境
+ uses: actions/setup-python@v5
+ with:
+ python-version: ${{ env.PYTHON_VERSION }}
+
+ - name: 安装安全扫描工具
+ run: |
+ python -m pip install --upgrade pip
+ pip install -r requirements.txt
+
+ # 使用 OpenClaw 内置安全扫描器
+ - name: 执行敏感信息扫描
+ run: |
+ echo "🔒 Running secrets scan..."
+ python -m src.utils.security_scanner . --format text --max-critical 0 --max-high 0
+ continue-on-error: false
+
+ # 备用：使用 truffleHog 进行深度扫描
+ - name: 使用TruffleHog扫描历史提交
+ uses: trufflesecurity/trufflehog@main
+ with:
+ path: ./
+ base: main
+ head: HEAD
+ extra_args: --debug --only-verified
+
+ # 第三阶段：依赖安全扫描（已有核心安全能力）
+ security-scan:
+ runs-on: ubuntu-latest
+ steps:
+ - name: 检出项目代码
+ uses: actions/checkout@v4
+
+ - name: 执行依赖安全漏洞扫描
+ run: |
+ pip install safety pip-audit
+ # 使用safety扫描已知漏洞
+ safety check --full-report --fail-on=ALL
+ # 使用pip-audit二次扫描，双校验提升安全检测覆盖率
+ pip-audit --desc
+
+ # 第四阶段：镜像构建
+ build-image:
+ runs-on: ubuntu-latest
+ needs: [test, secrets-scan, security-scan] # 三个校验任务并行完成后执行，提升构建速度
+ steps:
+ - name: 检出项目代码
+ uses: actions/checkout@v4
+
+ # 配置Docker Buildx，支持跨架构构建，同时配置镜像层缓存
+ - name: 设置Docker Buildx
+ uses: docker/setup-buildx-action@v3
+
+ # 登录镜像仓库
+ - name: 登录容器镜像仓库
+ uses: docker/login-action@v3
+ with:
+ registry: ${{ env.DOCKER_REGISTRY }}
+ username: ${{ secrets.DOCKER_REGISTRY_USER }}
+ password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+
+ # 构建并推送镜像，使用缓存降低构建耗时
+ - name: 构建并推送Docker镜像
+ uses: docker/build-push-action@v5
+ with:
+ context: .
+ push: true
+ tags: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }},${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+ cache-from: type=gha
+ cache-to: type=gha,mode=max
+
+ # 第五阶段：新增：镜像签名校验（核心安全能力）
+ sign-image:
+ runs-on: ubuntu-latest
+ needs: build-image
+ steps:
+ - name: 安装cosign签名工具
+ uses: sigstore/cosign-installer@v3
+
+ - name: 对构建好的镜像进行keyless签名
+ run: |
+ cosign sign --yes ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}
+ env:
+ COSIGN_EXPERIMENTAL: '1'
+
+ # 第六阶段：测试环境自动部署
+ deploy-test:
+ runs-on: ubuntu-latest
+ needs: sign-image # 依赖镜像签名完成后执行
+ if: github.ref == 'refs/heads/dev' # 仅dev分支推送自动部署测试环境
+ steps:
+ - name: 配置SSH连接测试服务器
+ uses: appleboy/ssh-action@v1.0.3
+ with:
+ host: ${{ env.TEST_SERVER_HOST }}
+ username: ${{ env.TEST_SERVER_USER }}
+ key: ${{ secrets.TEST_SERVER_SSH_KEY }}
+ script: |
+ # 先验证镜像签名合法性再部署
+ curl -O https://github.com/sigstore/cosign/releases/latest/download/cosign-linux-amd64
+ chmod +x cosign-linux-amd64
+ COSIGN_EXPERIMENTAL=1 ./cosign verify ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}
+ # 拉取最新镜像
+ docker pull ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}
+ # 停止旧容器
+ docker stop app-test || true
+ docker rm app-test || true
+ # 启动新容器（最小权限配置：不授予特权权限，只读挂载系统目录）
+ docker run -d --name app-test -p 8000:8000 --restart=always --security-opt no-new-privileges:true --read-only --tmpfs /tmp ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}
+ # 等待服务启动
+ sleep 10
+ # 执行冒烟测试，校验服务可用性
+ curl -f http://localhost:8000/health || exit 1

@@ -1,4 +1,6 @@
+# ============================================
 # Python
+# ============================================
 __pycache__/
 *.py[cod]
 *$py.class
@@ -19,54 +21,205 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
-# 虚拟环境
+# ============================================
+# Virtual Environments
+# ============================================
 venv/
 ENV/
 env/
 .venv/
+env.bak/
+venv.bak/
 
-# IDE
+# ============================================
+# IDE & Editors
+# ============================================
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+*.sublime-workspace
+*.sublime-project
 
-# 测试
+# ============================================
+# Testing & Coverage
+# ============================================
 .pytest_cache/
 .coverage
 htmlcov/
 .tox/
 .nox/
+.coverage.*
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
 
-# 数据
+# ============================================
+# Data & Database
+# ============================================
 data/chroma_db/
 *.db
 *.sqlite3
+*.sqlite
+*.db-journal
+data/*.json
+data/*.yaml
+data/*.yml
 
-# 日志
+# ============================================
+# Logs
+# ============================================
 *.log
 logs/
+log/
+*.log.*
 reports/cycle_*.json
+reports/*.html
+reports/*.md
 
-# 临时文件
+# ============================================
+# Temporary Files
+# ============================================
 tmp/
 temp/
 *.tmp
+*.temp
 workspace/
+.cache/
+*.pid
+*.seed
+*.pid.lock
 
-# 系统文件
+# ============================================
+# System Files
+# ============================================
 .DS_Store
 Thumbs.db
+*.lnk
+desktop.ini
 
-# 环境变量
+# ============================================
+# Environment Variables & Secrets
+# ============================================
+# 环境变量文件（包含敏感信息）
 .env
 .env.local
+.env.*.local
+.env.development
+.env.test
+.env.production
+.env.staging
 
-# 其他
-.mypy_cache/
-.dmypy.json
-.ipynb_checkpoints/
+# 旧版环境文件
+.envrc
+.direnv/
+
+# Secrets & Keys
 *.pem
 *.key
+*.crt
+*.p12
+*.pfx
+secrets.yaml
+secrets.yml
+secrets.json
+config.local.yaml
+config.local.yml
+config/production.yaml
+config/production.yml
+credentials.json
+credentials.yaml
+credentials.yml
+
+# API Keys & Tokens
+google-credentials.json
+aws-credentials.csv
+azure-credentials.json
+
+# ============================================
+# Security Scanner
+# ============================================
+# 安全扫描报告
+security-report.*
+secret-scan-results.*
+.trufflehog/
+.gitleaks/
+
+# ============================================
+# Jupyter Notebook
+# ============================================
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ============================================
+# Type Checking
+# ============================================
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+
+# ============================================
+# Documentation Build
+# ============================================
+site/
+docs/_build/
+docs/build/
+*.doctrees
+
+# ============================================
+# Package Managers
+# ============================================
+# Poetry
+poetry.lock
+
+# Pipenv
+Pipfile.lock
+
+# npm (if using Node tools)
+node_modules/
+package-lock.json
+yarn.lock
+
+# ============================================
+# Docker
+# ============================================
+.dockerignore
+docker-compose.override.yml
+docker-compose.override.yaml
+
+# ============================================
+# Deployment
+# ============================================
+.terraform/
+*.tfstate
+*.tfstate.*
+.ansible/
+*.retry
+
+# ============================================
+# Evolution System
+# ============================================
+workspace/evolution/
+workspace/*.json
+workspace/*.yaml
+workspace/*.log
+
+# ============================================
+# Local Development
+# ============================================
+local_settings.py
+local_config.yaml
+dev_settings.py
+dev_config.yaml
+
+# ============================================
+# Profiling
+# ============================================
+prof/
+*.prof
+line_profiler_results.txt
