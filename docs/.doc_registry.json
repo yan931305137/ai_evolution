@@ -278,6 +278,19 @@
       "related_files": [],
       "auto_delete": true,
       "last_verified_at": "2026-03-01T00:29:06.405022"
+    },
+    "doc_a7ae747e": {
+      "doc_id": "doc_a7ae747e",
+      "path": "./agent_paradigm_learning/agent_paradigms_learning_notes.md",
+      "title": "Agent主流范式学习笔记",
+      "task_id": "task_fcb5d025",
+      "created_at": "2026-03-01T01:53:52.961243",
+      "ttl_days": 3,
+      "status": "active",
+      "doc_type": "learning",
+      "related_files": [],
+      "auto_delete": true,
+      "last_verified_at": "2026-03-01T01:53:52.961245"
     }
   }
 }
