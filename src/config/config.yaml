@@ -1,0 +1,220 @@
+# OpenClaw-Local Configuration
+
+# LLM Configuration
+llm:
+  api_key: ""
+  base_url: ""
+  model_name: doubao-seed-2-0-pro-260215
+  temperature: 0.7
+  timeout: 600
+  max_tokens: 4096
+
+# Database Configuration
+database:
+  path: "assets/database.db"
+  type: "sqlite"
+
+# Memory System Configuration
+memory:
+  chroma_path: "assets/chroma_db"
+  collection_names:
+    conversations: "conversations"
+    knowledge: "knowledge"
+
+# Agent Configuration
+agent:
+  max_steps: 10000
+  max_repeat_actions: 3
+  llm_retries:
+    max_retries: 3
+    retry_delay_base: 1
+  memory_retrieval:
+    complex_task_results: 8
+    simple_task_results: 3
+  complex_task_keywords:
+    - "代码"
+    - "编写"
+    - "开发"
+    - "debug"
+    - "故障排查"
+    - "错误修复"
+    - "优化"
+    - "实现"
+    - "部署"
+    - "测试"
+
+# Self-Evolution Configuration
+self_evolution:
+  enabled: true
+  iteration_interval_minutes: 30
+  max_consecutive_failures: 3
+  auto_restart: true
+
+# Logging Configuration
+logging:
+  level: INFO
+  format: "%(asctime)s - %(levelname)s - %(message)s"
+
+# ============================================
+# 信息获取渠道分类梳理与筛选项目 - 业务配置
+# ============================================
+
+# 分类标签配置
+classification:
+  # 信息源分类标签定义
+  categories:
+    - name: "官方权威"
+      description: "政府机构、官方组织发布的权威信息源"
+      priority: 1
+    - name: "专业媒体"
+      description: "专业媒体、期刊、研究报告等"
+      priority: 2
+    - name: "行业资讯"
+      description: "行业动态、市场资讯类信息源"
+      priority: 3
+    - name: "社交媒体"
+      description: "社交媒体平台、论坛等用户生成内容"
+      priority: 4
+    - name: "个人博客"
+      description: "个人博客、自媒体等"
+      priority: 5
+  
+  # 自动分类规则
+  auto_classification_rules:
+    - keyword_pattern: ["gov", "gov.cn", "官方", "政府部门"]
+      target_category: "官方权威"
+    - keyword_pattern: ["journal", "期刊", "学报", "研究"]
+      target_category: "专业媒体"
+    - keyword_pattern: ["news", "资讯", "行业", "市场"]
+      target_category: "行业资讯"
+    - keyword_pattern: ["weibo", "twitter", "facebook", "forum", "论坛"]
+      target_category: "社交媒体"
+    - keyword_pattern: ["blog", "博客", "自媒体", "个人"]
+      target_category: "个人博客"
+
+# 筛选标准配置
+screening_criteria:
+  # 更新频率筛选
+  update_frequency:
+    min_days: 1  # 最小更新间隔（天）
+    max_days: 30  # 最大更新间隔（天）
+    check_period_days: 7  # 检查周期（天）
+  
+  # 内容质量评分标准
+  quality_scoring:
+    # 权威性评分（0-100）
+    authority:
+      official_source_weight: 30  # 官方来源权重
+      professional_media_weight: 25  # 专业媒体权重
+      industry_institution_weight: 20  # 行业机构权重
+      individual_weight: 10  # 个人来源权重
+      unknown_weight: 5  # 未知来源权重
+    
+    # 稳定性评分（0-100）
+    stability:
+      update_frequency_weight: 40  # 更新频率权重
+      uptime_rate_weight: 30  # 可用性权重
+      historical_reliability_weight: 30  # 历史可靠性权重
+    
+    # 内容质量评分（0-100）
+    content_quality:
+      professional_depth_weight: 35  # 专业深度权重
+      information_density_weight: 30  # 信息密度权重
+      accuracy_verification_weight: 20  # 准确性验证权重
+      readability_weight: 15  # 可读性权重
+    
+    # 综合评分阈值
+    overall_threshold:
+      high_quality: 80  # 高质量阈值
+      medium_quality: 60  # 中等质量阈值
+      low_quality: 40  # 低质量阈值
+  
+  # 广告识别标准
+  ad_detection:
+    ad_density_threshold: 0.3  # 广告密度阈值（30%）
+    suspicious_keywords:
+      - "广告"
+      - "赞助"
+      - "推广"
+      - "sponsored"
+      - "ad"
+    suspicious_domains:
+      - "doubleclick.net"
+      - "googleadservices.com"
+  
+  # 优质源筛选阈值
+  quality_source_threshold:
+    min_authority_score: 60  # 最低权威性分数
+    min_stability_score: 50  # 最低稳定性分数
+    min_content_score: 55  # 最低内容质量分数
+    min_overall_score: 65  # 最低综合分数
+    max_ad_ratio: 0.25  # 最大广告占比（25%）
+
+# 清理规则配置
+cleanup_rules:
+  # 低质源识别规则
+  low_quality_identification:
+    # 长期未更新
+    no_update_threshold_days: 90  # 超过90天未更新
+    
+    # 广告占比过高
+    max_ad_ratio: 0.4  # 超过40%广告内容
+    
+    # 质量评分过低
+    min_quality_score: 30  # 低于30分
+    
+    # 错误率过高
+    max_error_rate: 0.5  # 错误率超过50%
+  
+  # 自动清理策略
+  auto_cleanup:
+    enabled: true
+    cleanup_interval_days: 7  # 清理间隔（天）
+    batch_size: 100  # 每次清理数量限制
+    dry_run_mode: false  # 是否为试运行模式（不真正删除）
+  
+  # 清理执行方式
+  cleanup_execution:
+    # 取消订阅（对于订阅类源）
+    unsubscribe_enabled: true
+    
+    # 标记为不可用（非删除）
+    mark_as_disabled: true
+    
+    # 完全删除（谨慎使用）
+    permanent_delete: false
+  
+  # 清理通知
+  cleanup_notification:
+    enabled: true
+    notification_channels:
+      - "log"  # 日志记录
+      - "email"  # 邮件通知（可选）
+      - "dashboard"  # 仪表板显示
+    summary_report: true  # 生成清理汇总报告
+
+# 统计分析配置
+analytics:
+  # 有效信息占比统计
+  effectiveness_metrics:
+    enabled: true
+    calculation_period_days: 30  # 统计周期（天）
+    metrics:
+      - "valid_info_ratio"  # 有效信息占比
+      - "update_frequency"  # 更新频率
+      - "quality_score"  # 质量评分
+      - "ad_ratio"  # 广告占比
+      - "error_rate"  # 错误率
+  
+  # 报告生成
+  reporting:
+    enabled: true
+    report_interval_days: 7  # 报告生成间隔
+    report_types:
+      - "daily_summary"  # 日汇总
+      - "weekly_trend"  # 周趋势
+      - "monthly_analysis"  # 月分析
+    export_formats:
+      - "json"
+      - "csv"
+      - "markdown"

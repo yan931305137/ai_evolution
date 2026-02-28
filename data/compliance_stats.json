@@ -1,0 +1,206 @@
+[
+  {
+    "timestamp": 1772218268.5065331,
+    "file_path": "../tests/unit/storage/test_memory.py",
+    "content_type": "code_test",
+    "pass": false,
+    "detail": {
+      "path_check": {
+        "path_compliance": false,
+        "temp_tag_compliance": true,
+        "violation_details": [
+          "存储路径不符合规则，code_test类型内容应存储在以下路径前缀下: ./tests/"
+        ],
+        "suggestion": "合规校验不通过，请根据违规详情修正后再执行操作"
+      },
+      "security_check": {},
+      "project_rules": {},
+      "total_pass": false
+    }
+  },
+  {
+    "timestamp": 1772218464.8576448,
+    "file_path": "./tests/unit/storage/test_memory.py",
+    "content_type": "code_test",
+    "pass": true,
+    "detail": {
+      "path_check": {
+        "path_compliance": true,
+        "temp_tag_compliance": true,
+        "violation_details": [],
+        "suggestion": "合规校验通过"
+      },
+      "security_check": {},
+      "project_rules": {},
+      "total_pass": true
+    }
+  },
+  {
+    "timestamp": 1772251479.977572,
+    "file_path": "business/answer_transparency_manager.py",
+    "content_type": "code_script",
+    "pass": false,
+    "detail": {
+      "path_check": {
+        "path_compliance": false,
+        "temp_tag_compliance": true,
+        "violation_details": [
+          "存储路径不符合规则，code_script类型内容应存储在以下路径前缀下: ./scripts/"
+        ],
+        "suggestion": "合规校验不通过，请根据违规详情修正后再执行操作"
+      },
+      "security_check": {},
+      "project_rules": {},
+      "total_pass": false
+    }
+  },
+  {
+    "timestamp": 1772251479.977572,
+    "file_path": "business/answer_transparency_manager.py",
+    "content_type": "code_core",
+    "pass": false,
+    "detail": {
+      "path_check": {
+        "path_compliance": false,
+        "temp_tag_compliance": true,
+        "violation_details": [
+          "存储路径不符合规则，code_core类型内容应存储在以下路径前缀下: ./core/"
+        ],
+        "suggestion": "合规校验不通过，请根据违规详情修正后再执行操作"
+      },
+      "security_check": {
+        "read_error": "[Errno 2] No such file or directory: 'business/answer_transparency_manager.py'"
+      },
+      "project_rules": {},
+      "total_pass": false
+    }
+  },
+  {
+    "timestamp": 1772251479.977572,
+    "file_path": "core/answer_transparency_manager.py",
+    "content_type": "code_core",
+    "pass": false,
+    "detail": {
+      "path_check": {
+        "path_compliance": true,
+        "temp_tag_compliance": true,
+        "violation_details": [],
+        "suggestion": "合规校验通过"
+      },
+      "security_check": {
+        "read_error": "[Errno 2] No such file or directory: 'core/answer_transparency_manager.py'"
+      },
+      "project_rules": {},
+      "total_pass": false
+    }
+  },
+  {
+    "timestamp": 1772274395.4802582,
+    "file_path": ".github/workflows/ci-cd-pipeline.yml",
+    "content_type": "code_script",
+    "pass": false,
+    "detail": {
+      "path_check": {
+        "path_compliance": false,
+        "temp_tag_compliance": true,
+        "violation_details": [
+          "存储路径不符合规则，code_script类型内容应存储在以下路径前缀下: ./scripts/"
+        ],
+        "suggestion": "合规校验不通过，请根据违规详情修正后再执行操作"
+      },
+      "security_check": {},
+      "project_rules": {},
+      "total_pass": false
+    }
+  },
+  {
+    "timestamp": 1772274467.0938168,
+    "file_path": "./Dockerfile",
+    "content_type": "code_script",
+    "pass": false,
+    "detail": {
+      "path_check": {
+        "path_compliance": false,
+        "temp_tag_compliance": true,
+        "violation_details": [
+          "禁止在项目根目录直接生成文件，请存入对应分类子目录",
+          "存储路径不符合规则，code_script类型内容应存储在以下路径前缀下: ./scripts/"
+        ],
+        "suggestion": "合规校验不通过，请根据违规详情修正后再执行操作"
+      },
+      "security_check": {},
+      "project_rules": {},
+      "total_pass": false
+    }
+  },
+  {
+    "timestamp": 1772274467.0938168,
+    "file_path": "./.github/workflows/cicd_full_pipeline.yml",
+    "content_type": "code_script",
+    "pass": false,
+    "detail": {
+      "path_check": {
+        "path_compliance": false,
+        "temp_tag_compliance": true,
+        "violation_details": [
+          "存储路径不符合规则，code_script类型内容应存储在以下路径前缀下: ./scripts/"
+        ],
+        "suggestion": "合规校验不通过，请根据违规详情修正后再执行操作"
+      },
+      "security_check": {},
+      "project_rules": {},
+      "total_pass": false
+    }
+  },
+  {
+    "timestamp": 1772274467.0938168,
+    "file_path": "./scripts/cicd_full_pipeline.yml",
+    "content_type": "code_script",
+    "pass": true,
+    "detail": {
+      "path_check": {
+        "path_compliance": true,
+        "temp_tag_compliance": true,
+        "violation_details": [],
+        "suggestion": "合规校验通过"
+      },
+      "security_check": {},
+      "project_rules": {},
+      "total_pass": true
+    }
+  },
+  {
+    "timestamp": 1772274521.3674824,
+    "file_path": "./scripts/Dockerfile",
+    "content_type": "code_script",
+    "pass": true,
+    "detail": {
+      "path_check": {
+        "path_compliance": true,
+        "temp_tag_compliance": true,
+        "violation_details": [],
+        "suggestion": "合规校验通过"
+      },
+      "security_check": {},
+      "project_rules": {},
+      "total_pass": true
+    }
+  },
+  {
+    "timestamp": 1772274550.114305,
+    "file_path": "./docs/cicd_pipeline_usage_guide.md",
+    "content_type": "doc",
+    "pass": true,
+    "detail": {
+      "path_check": {
+        "path_compliance": true,
+        "temp_tag_compliance": true,
+        "violation_details": [],
+        "suggestion": "合规校验通过"
+      },
+      "security_check": {},
+      "project_rules": {},
+      "total_pass": true
+    }
+  }
+]

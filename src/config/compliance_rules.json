@@ -1,0 +1,50 @@
+{
+  "STORAGE_PATH_RULES": {
+    "code_skill": [
+      "./skills/"
+    ],
+    "code_core": [
+      "./core/"
+    ],
+    "code_script": [
+      "./scripts/"
+    ],
+    "code_test": [
+      "./tests/"
+    ],
+    "data_system": [
+      "./data/"
+    ],
+    "data_training": [
+      "./training/"
+    ],
+    "output_report": [
+      "./reports/"
+    ],
+    "output_temp": [
+      "./tmp/"
+    ],
+    "doc": [
+      "./docs/"
+    ]
+  },
+  "FORBID_DELETE_PATH_PREFIXES": [
+    "./core/",
+    "./config/",
+    "./data/*.db",
+    "./skills/",
+    "./README.md",
+    "./requirements.txt",
+    "./pytest.ini"
+  ],
+  "LEGAL_TEMP_RESOURCE_FLAGS": [
+    "./tmp/",
+    ".tmp",
+    ".cache",
+    ".pyc",
+    "__pycache__",
+    ".pytest_cache"
+  ],
+  "last_update_time": "2026-02-28 20:00:33",
+  "version": "1.0.0"
+}
