@@ -170,12 +170,17 @@ class BrainOrchestrator:
             query=memory_query,
             top_k=3
         )
-        # retrieve返回的是 [(id, score), ...]，需要转换为MemoryEntry
+        # retrieve返回的可能是 [(id, score), ...] 或 [(MemoryEntry, score), ...]
         memory_entries = []
-        for mem_id, score in relevant_memories:
-            if mem_id in self.memory.long_term_memory:
-                entry = self.memory.long_term_memory[mem_id]
-                entry.relevance_score = score  # 添加相关性分数
+        for item, score in relevant_memories:
+            if isinstance(item, MemoryEntry):
+                # 已经是MemoryEntry对象
+                item.relevance_score = score
+                memory_entries.append(item)
+            elif item in self.memory.long_term_memory:
+                # 是memory_id，需要从字典中获取
+                entry = self.memory.long_term_memory[item]
+                entry.relevance_score = score
                 memory_entries.append(entry)
         relevant_memories = memory_entries
         systems_involved.append("memory")

@@ -23,6 +23,13 @@ from src.brain.human_cognition import (
     BodyState
 )
 
+# 导入持久化记忆系统
+try:
+    from src.brain.memory_system.persistent_memory import PersistentMemorySystem
+    PERSISTENT_MEMORY_AVAILABLE = True
+except ImportError:
+    PERSISTENT_MEMORY_AVAILABLE = False
+
 
 class HumanLevelBrain(BrainOrchestrator):
     """
@@ -35,9 +42,23 @@ class HumanLevelBrain(BrainOrchestrator):
     4. 社会理解与互动（社交智能）
     5. 生理需求驱动（内稳态）
     6. 自我反思与意识（元认知）
+    7. 持久化记忆（长期记忆存储）
     """
     
-    def __init__(self, start_as_infant: bool = True):
+    def __init__(
+        self,
+        start_as_infant: bool = True,
+        use_persistent_memory: bool = False,
+        memory_storage_path: str = "data/chroma_db/brain_memory"
+    ):
+        """
+        初始化人类级大脑
+        
+        Args:
+            start_as_infant: 是否从婴儿阶段开始
+            use_persistent_memory: 是否启用持久化记忆
+            memory_storage_path: 记忆存储路径
+        """
         super().__init__()
         
         # 人类级认知系统
@@ -58,6 +79,35 @@ class HumanLevelBrain(BrainOrchestrator):
             "metacognition": self.metacognition
         })
         
+        # 持久化记忆系统（可选）
+        self.use_persistent_memory = use_persistent_memory and PERSISTENT_MEMORY_AVAILABLE
+        if self.use_persistent_memory:
+            self.memory = PersistentMemorySystem(
+                capacity=10000,
+                persist_directory=memory_storage_path
+            )
+            self.systems["memory"] = self.memory
+            print(f"🧠 持久化记忆已启用 | 路径: {memory_storage_path}")
+        
+        # 身体状态（必须连接外部传感器/执行器）
+        self.body = BodyState()
+        
+        # 叙事自我（自传体记忆）
+        self.life_narrative: List[Dict] = []
+        self.identity: Dict = {
+            "name": None,
+            "values": [],
+            "goals": [],
+            "beliefs": {}
+        }
+        
+        # 发育起始点
+        if not start_as_infant:
+            # 直接设为成年（跳过发育）
+            self.developmental.stage = DevelopmentalStage.ADULT
+            self.developmental.age_equivalent = 240  # 20岁
+            for ability in self.developmental.abilities:
+                self.developmental.abilities[ability] = True
         # 身体状态（必须连接外部传感器/执行器）
         self.body = BodyState()
         
@@ -219,8 +269,48 @@ class HumanLevelBrain(BrainOrchestrator):
             "current_needs": {k.value: v for k, v in self.homeostasis.needs.items()},
             "abilities": self.developmental.abilities,
             "relationships": len(self.social.relationships),
-            "subjective_report": self.report_subjective_experience()
+            "subjective_report": self.report_subjective_experience(),
+            "memory_stats": self.get_memory_stats() if self.use_persistent_memory else None
         }
+    
+    def get_memory_stats(self) -> Dict:
+        """获取记忆统计信息（包含持久化存储）"""
+        if self.use_persistent_memory and hasattr(self.memory, 'get_memory_stats'):
+            return self.memory.get_memory_stats()
+        return {"persistent_memory_enabled": False}
+    
+    def persist_memories(self):
+        """手动触发所有记忆的持久化"""
+        if self.use_persistent_memory and hasattr(self.memory, 'persist_all'):
+            self.memory.persist_all()
+            print("💾 所有记忆已持久化保存")
+        else:
+            print("⚠️ 持久化记忆未启用")
+    
+    def recall_memories(self, query: str, top_k: int = 5) -> List[Dict]:
+        """
+        基于查询检索相关记忆
+        
+        Args:
+            query: 查询内容
+            top_k: 返回的记忆数量
+            
+        Returns:
+            相关记忆列表
+        """
+        if not self.use_persistent_memory:
+            return []
+        
+        results = self.memory.retrieve(query, top_k)
+        return [
+            {
+                "content": str(memory.content),
+                "similarity": score,
+                "created_at": memory.timestamp.isoformat() if isinstance(memory.timestamp, datetime) else str(memory.timestamp),
+                "importance": memory.importance
+            }
+            for memory, score in results
+        ]
     
     def _summarize_life_story(self) -> str:
         """总结生命故事"""
