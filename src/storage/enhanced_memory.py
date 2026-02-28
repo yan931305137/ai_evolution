@@ -6,18 +6,29 @@ import os
 import time
 import json
 import random
-import chromadb
 import logging
 import numpy as np
 from typing import List, Dict, Optional, Any, Tuple
 from dataclasses import dataclass
 from enum import Enum
 
+# 尝试导入 chromadb，如果不存在则使用 mock
+try:
+    import chromadb
+    from chromadb import EmbeddingFunction, Documents, Embeddings
+    CHROMADB_AVAILABLE = True
+except ImportError:
+    CHROMADB_AVAILABLE = False
+    chromadb = None
+    EmbeddingFunction = object
+    Documents = list
+    Embeddings = list
+    logging.warning("chromadb not available. Enhanced memory system will be disabled.")
+
 from src.utils.llm import LLMClient
 from src.utils.needs import Needs
 from src.utils.emotions import EmotionType
 from src.utils.constants import CHROMA_DB_DIR
-from chromadb import EmbeddingFunction, Documents, Embeddings
 
 class SimpleEmbeddingFunction(EmbeddingFunction):
     """
@@ -100,6 +111,15 @@ class EnhancedMemorySystem:
     
     def _init_chroma(self):
         """初始化ChromaDB - 使用SimpleEmbedding，无需下载模型"""
+        if not CHROMADB_AVAILABLE:
+            logging.warning("EnhancedMemory: ChromaDB not available, memory system disabled")
+            self.client = None
+            self.conversations = None
+            self.knowledge = None
+            self.experiences = None
+            self.dreams = None
+            return
+        
         try:
             self.client = chromadb.PersistentClient(path=self.db_path)
             

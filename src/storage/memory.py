@@ -1,10 +1,22 @@
 import os
 import datetime
-import chromadb
 import logging
 import numpy as np
 from typing import List, Dict, Optional, Any
-from chromadb import EmbeddingFunction, Documents, Embeddings
+
+# 尝试导入 chromadb，如果不存在则使用 mock
+try:
+    import chromadb
+    from chromadb import EmbeddingFunction, Documents, Embeddings
+    CHROMADB_AVAILABLE = True
+except ImportError:
+    CHROMADB_AVAILABLE = False
+    chromadb = None
+    EmbeddingFunction = object
+    Documents = list
+    Embeddings = list
+    logging.warning("chromadb not available. Memory system will be disabled.")
+
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from src.utils.llm import LLMClient
@@ -44,6 +56,13 @@ class MemorySystem:
         self.db_path = db_path
         self.client = None
         self.needs = needs_system # Link to vital system for energy rewards
+        
+        if not CHROMADB_AVAILABLE:
+            logging.warning("ChromaDB not available. Memory system disabled.")
+            self.scheduler = None
+            self.conversations = None
+            self.knowledge = None
+            return
         
         # 设置模型缓存目录到项目内部，避免每次重新下载
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

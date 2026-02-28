@@ -9,14 +9,29 @@ import logging
 import os
 from typing import Optional
 from langchain.tools import tool, ToolRuntime
-from coze_coding_utils.runtime_ctx.context import new_context
-from coze_coding_dev_sdk.video import (
-    VideoGenerationClient,
-    TextContent,
-    ImageURLContent,
-    ImageURL
-)
-from coze_coding_dev_sdk import APIError
+
+try:
+    from coze_coding_utils.runtime_ctx.context import new_context
+except ImportError:
+    def new_context(**kwargs):
+        return None
+
+try:
+    from coze_coding_dev_sdk.video import (
+        VideoGenerationClient,
+        TextContent,
+        ImageURLContent,
+        ImageURL
+    )
+    from coze_coding_dev_sdk import APIError
+    COZE_SDK_AVAILABLE = True
+except ImportError:
+    COZE_SDK_AVAILABLE = False
+    VideoGenerationClient = None
+    TextContent = None
+    ImageURLContent = None
+    ImageURL = None
+    APIError = Exception
 
 logger = logging.getLogger(__name__)
 

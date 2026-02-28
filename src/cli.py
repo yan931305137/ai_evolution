@@ -208,7 +208,6 @@ def main():
                 # 手动触发一次重载检查
                 if status['running']:
                     console.print("[dim]Checking for module changes...[/dim]")
-                    from src.utils.hot_reload_manager import hot_reload_manager
                     changed = hot_reload_manager.check_module_changes()
                     if changed:
                         console.print(f"[yellow]Detected changes in: {', '.join(changed)}[/yellow]")

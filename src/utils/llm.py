@@ -10,7 +10,15 @@ from datetime import datetime
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
-from coze_coding_utils.runtime_ctx.context import default_headers, new_context
+
+# 尝试导入 Coze 工具包，如果不存在则使用 None
+try:
+    from coze_coding_utils.runtime_ctx.context import default_headers, new_context
+    COZE_UTILS_AVAILABLE = True
+except ImportError:
+    COZE_UTILS_AVAILABLE = False
+    default_headers = None
+    new_context = None
 
 
 class LLMClient:
@@ -42,7 +50,7 @@ class LLMClient:
             self.base_url = base_url or os.getenv("COZE_INTEGRATION_MODEL_BASE_URL")
             self.model_name = model_name or os.getenv("COZE_MODEL_NAME", "doubao-seed-2-0-pro-260215")
             extra_body = {"thinking": {"type": "enabled"}}
-            default_headers_config = default_headers(new_context(method="chat"))
+            default_headers_config = default_headers(new_context(method="chat")) if COZE_UTILS_AVAILABLE else None
         
         if not self.api_key:
             logging.warning(f"API Key not found for provider {self.provider}. Please set the environment variable.")

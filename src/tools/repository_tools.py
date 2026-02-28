@@ -8,7 +8,13 @@ LangChain 工具包装器 - 仓库管理
 import logging
 from typing import Optional, List, Dict, Any
 from langchain.tools import tool, ToolRuntime
-from coze_coding_utils.runtime_ctx.context import new_context
+
+try:
+    from coze_coding_utils.runtime_ctx.context import new_context
+except ImportError:
+    def new_context(**kwargs):
+        return None
+
 from src.tools.repo_tools import repository_manager, Repository
 
 logger = logging.getLogger(__name__)
