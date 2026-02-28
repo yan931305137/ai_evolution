@@ -283,6 +283,14 @@ class EnhancedHybridBrain:
         
         logging.info(f"🧠⚡ Enhanced Hybrid Brain已初始化 | 本地优先: {local_first}")
     
+    @property
+    def api_key(self) -> Optional[str]:
+        """获取底层LLM的API Key"""
+        # 尝试从base_client的llm获取
+        if hasattr(self.base_client, 'llm') and hasattr(self.base_client.llm, 'api_key'):
+            return self.base_client.llm.api_key
+        return None
+    
     def generate(
         self,
         messages: List[Dict[str, str]],

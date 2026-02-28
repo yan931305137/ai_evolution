@@ -1,0 +1,53 @@
+# OpenClaw 配置示例文件
+# 复制此文件为 config.yaml 并填入实际配置
+
+# ============================================
+# LLM Configuration - 大语言模型配置
+# ============================================
+llm:
+  # 提供商选择: coze | ark | brain | hybrid
+  provider: hybrid
+  
+  # API 配置（请填入实际值）
+  # api_key: "your-api-key-here"
+  # base_url: "https://api.example.com/v1"
+  
+  model_name: doubao-seed-2-0-pro-260215
+  temperature: 0.7
+  timeout: 600
+  max_tokens: 4096
+  
+  # Brain（人类级大脑）专用配置
+  brain:
+    start_as_infant: false
+    identity:
+      name: "OpenClaw Brain"
+      values: ["求知", "助人", "成长"]
+    capabilities:
+      embodied: true
+      emotion: true
+      developmental: true
+      social: true
+      homeostasis: true
+      metacognition: true
+
+# Database Configuration
+database:
+  path: "assets/database.db"
+  type: "sqlite"
+
+# Memory System Configuration
+memory:
+  chroma_path: "data/chroma_db"
+  collection_names:
+    conversations: "conversations"
+    knowledge: "knowledge"
+
+# Self-Evolution Configuration
+self_evolution:
+  enabled: true
+  iteration_interval_minutes: 30
+
+# Logging Configuration
+logging:
+  level: INFO

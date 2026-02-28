@@ -22,6 +22,7 @@ from src.utils.self_awareness import SelfAwarenessSystem
 from src.storage.enhanced_memory import EnhancedMemorySystem, MemoryType, create_emotional_tag
 from src.utils.creativity import CreativityEngine, CreativityMethod
 from src.utils.multimodal_perception import MultimodalPerceptionSystem
+from src.utils.evolution_feedback_loop import EvolutionFeedbackLoop
 
 try:
     from rich.console import Console
@@ -74,6 +75,13 @@ class EnhancedLifeCycleManager:
             memory_system=self.enhanced_memory,
             emotion_system=self.emotions
         )
+        
+        # 进化闭环系统
+        self.evolution_loop = EvolutionFeedbackLoop(
+            workspace_dir="workspace/evolution",
+            config_path="config/evolution_goals.yaml"
+        )
+        self.generated_ideas_buffer = []  # 缓冲区存储生成的想法
         
         # 状态管理
         self.running = False
@@ -392,6 +400,61 @@ class EnhancedLifeCycleManager:
             
             time.sleep(3)
     
+    def _run_evolution_cycle(self):
+        """运行进化闭环：评估→应用→进化"""
+        if not self.generated_ideas_buffer:
+            return
+        
+        self._log("🔄 Running evolution feedback loop...")
+        self.state = "EVOLVING"
+        
+        try:
+            # 运行完整进化周期
+            results = self.evolution_loop.run_full_cycle(self.generated_ideas_buffer)
+            
+            # 获取摘要
+            summary = results.get("summary", {})
+            flow = summary.get("ideas_flow", {})
+            
+            self._log(f"Evolution: {flow.get('evaluated', 0)} evaluated, "
+                     f"{flow.get('applied', 0)} applied, "
+                     f"{flow.get('success', 0)} success")
+            
+            # 清空缓冲区
+            self.generated_ideas_buffer = []
+            
+            # 触发积极情感
+            if flow.get('success', 0) > 0:
+                self.emotions.trigger_emotion(
+                    EmotionType.HAPPINESS, 
+                    30.0, 
+                    f"成功应用{flow['success']}个想法"
+                )
+            
+        except Exception as e:
+            self._log(f"Evolution cycle failed: {e}")
+    
+    def _evaluate_idea(self, idea):
+        """评估单个想法"""
+        try:
+            # 评估想法
+            eval_result = self.evolution_loop.evaluator.evaluate(
+                idea.idea,
+                context={"goals": [g.name for g in self.evolution_loop.goal_manager.get_active_goals()]}
+            )
+            
+            # 记录评估结果
+            score = eval_result.overall_score
+            if score >= 70:
+                self._log(f"  ✅ High quality idea (score: {score:.1f})")
+            elif score >= 50:
+                self._log(f"  🟡 Medium quality idea (score: {score:.1f})")
+            else:
+                self._log(f"  🔴 Low quality idea (score: {score:.1f})")
+            
+        except Exception as e:
+            self._log(f"  Idea evaluation failed: {e}")
+    
     def _learn_from_experience(self):
         """从经验中学习"""
         try:
@@ -443,6 +506,10 @@ class EnhancedLifeCycleManager:
                 if idea:
                     self._log(f"Creative idea generated: {idea.idea[:100]}...")
                     self.emotions.trigger_emotion(EmotionType.SURPRISE, 40.0, "产生创意")
+                    # 添加到缓冲区
+                    self.generated_ideas_buffer.append(idea)
+                    # 立即评估
+                    self._evaluate_idea(idea)
             
             elif method == CreativityMethod.DIVERGENT:
                 # 🚀 增加多样化主题池
@@ -478,6 +545,14 @@ class EnhancedLifeCycleManager:
                     self._log(f"Generated {len(ideas)} divergent ideas for '{topic}'")
                     for i, idea in enumerate(ideas):
                         self._log(f"  {i+1}. {idea.idea[:60]}...")
+                        # 添加到缓冲区
+                        self.generated_ideas_buffer.append(idea)
+                        # 评估每个想法
+                        self._evaluate_idea(idea)
+                    
+                    # 运行进化闭环（每3个想法或每第5个周期）
+                    if len(self.generated_ideas_buffer) >= 3 or self.cycle_count % 5 == 0:
+                        self._run_evolution_cycle()
         
         except Exception as e:
             self._log(f"Creativity engagement failed: {e}")
@@ -508,7 +583,8 @@ class EnhancedLifeCycleManager:
                 "awareness": self.awareness.get_self_awareness_summary(),
                 "memory": self.enhanced_memory.get_memory_statistics(),
                 "creativity": self.creativity.get_creativity_summary(),
-                "perception": self.perception.get_perception_summary()
+                "perception": self.perception.get_perception_summary(),
+                "evolution": self.evolution_loop.get_full_report()
             }
         }
         
@@ -554,8 +630,23 @@ class EnhancedLifeCycleManager:
                 "memory": self.enhanced_memory.get_memory_statistics(),
                 "creativity": self.creativity.get_creativity_summary()
             },
-            "perception": self.perception.get_perception_summary()
+            "perception": self.perception.get_perception_summary(),
+            "evolution": self.get_evolution_status()
         }
+    
+    def get_evolution_status(self) -> Dict:
+        """获取进化闭环状态"""
+        return {
+            "goals": self.evolution_loop.goal_manager.get_evolution_progress(),
+            "evaluation_stats": self.evolution_loop.evaluator.get_evaluation_stats(),
+            "application_stats": self.evolution_loop.applicator.get_application_stats(),
+            "buffer_size": len(self.generated_ideas_buffer)
+        }
+    
+    def configure_evolution_goal(self, name: str, **kwargs):
+        """配置进化目标"""
+        self.evolution_loop.configure_goal(name, **kwargs)
+        self._log(f"Evolution goal configured: {name}")
 
 
 # 便捷函数

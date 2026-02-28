@@ -1,0 +1,109 @@
+# 进化目标配置文件
+# 用户可以自定义AI的进化方向和目标
+
+# 进化策略
+# exploration: 探索优先 - 更激进的尝试新想法
+# exploitation: 利用优先 - 更保守地优化现有能力
+# balanced: 平衡策略 - 在探索和利用之间平衡
+# focused: 专注策略 - 专注于优先级最高的目标
+strategy: balanced
+
+# 进化目标列表
+goals:
+  - name: "ai操控电脑"
+    dimension: capability
+    description: "提升核心能力，包括推理、学习、创造等"
+    target_value: 90.0
+    current_value: 45.0
+    weight: 1.5
+    priority: 1
+    metrics:
+      - "任务成功率"
+      - "学习速度"
+      - "错误率"
+    enabled: true
+
+  - name: "知识积累"
+    dimension: knowledge
+    description: "扩展知识面和深度"
+    target_value: 85.0
+    current_value: 30.0
+    weight: 1.2
+    priority: 2
+    metrics:
+      - "知识覆盖率"
+      - "知识准确率"
+      - "检索效率"
+    enabled: true
+
+  - name: "效率优化"
+    dimension: efficiency
+    description: "提高处理速度和资源利用率"
+    target_value: 80.0
+    current_value: 60.0
+    weight: 1.0
+    priority: 3
+    metrics:
+      - "响应时间"
+      - "资源消耗"
+      - "吞吐量"
+    enabled: true
+
+  - name: "创造力增强"
+    dimension: creativity
+    description: "提升创新思维和问题解决能力"
+    target_value: 75.0
+    current_value: 40.0
+    weight: 1.0
+    priority: 3
+    metrics:
+      - "创意质量"
+      - "多样性"
+      - "可行性"
+    enabled: true
+
+  - name: "适应能力"
+    dimension: adaptation
+    description: "提升环境适应和应变能力"
+    target_value: 70.0
+    current_value: 35.0
+    weight: 0.8
+    priority: 4
+    metrics:
+      - "环境检测准确率"
+      - "调整响应速度"
+      - "策略切换成功率"
+    enabled: true
+
+# 评估配置
+evaluation:
+  # 评估权重
+  weights:
+    novelty: 0.2
+    feasibility: 0.25
+    value: 0.3
+    risk: 0.15
+    alignment: 0.1
+  
+  # 应用阈值
+  thresholds:
+    apply_min_score: 70
+    refine_min_score: 50
+
+# 应用配置
+application:
+  # 每周期最大应用数量
+  max_per_cycle: 3
+  # 重试次数
+  max_retries: 2
+  # 是否允许自动回滚
+  auto_rollback: true
+
+# 反馈配置
+feedback:
+  # 成功阈值 (成功率高于此值则加速进化)
+  success_threshold: 0.8
+  # 速度调整因子
+  velocity_factor: 2.0
+  # 学习率
+  learning_rate: 0.1

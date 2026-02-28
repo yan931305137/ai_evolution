@@ -1,0 +1,17 @@
+# 开发依赖
+-r requirements.txt
+
+# 代码格式化
+black>=23.0.0
+isort>=5.12.0
+
+# 代码检查
+flake8>=6.0.0
+mypy>=1.0.0
+
+# 测试
+pytest-cov>=4.0.0
+
+# 文档
+mkdocs>=1.5.0
+mkdocs-material>=9.0.0

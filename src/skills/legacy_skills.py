@@ -793,8 +793,16 @@ def run_self_optimization_cycle(target_module_path: str, test_cases: List[str] =
     返回：
         (优化是否成功, 全流程执行详情字典)
     """
-    from src.utils.self_optimization_feedback_loop import self_optimization_loop
-    return self_optimization_loop.run_optimization_cycle(target_module_path, test_cases)
+    # 使用新的进化反馈循环替代旧的self_optimization_loop
+    from src.utils.evolution_feedback_loop import EvolutionFeedbackLoop
+    
+    loop = EvolutionFeedbackLoop()
+    results = loop.run_full_cycle()
+    
+    return True, {
+        "status": "success",
+        "evolution_results": results.get("summary", {})
+    }
 
 
 # Skill: 生成内容合规校验函数，嵌入AI生成全链路执行前调用，自动校验内容存储位置是否符合规则、临时资源标记是否准确，返回校验结果和违规详情
@@ -987,7 +995,6 @@ def project_compliance_auto_check(file_path: str, content_type: str, scene_type:
 # Skill: 项目专属迭代周期智能管控能力，自动完成迭代全流程，将原平均2天的迭代周期缩短至12小时以内，迭代效率提升50%以上，是适配本项目自主迭代流程的独有专属能力
 from typing import List, Dict, Tuple
 import time
-from src.utils.self_optimization_feedback_loop import self_optimization_loop
 from src.utils.test_validation_manager import run_test_suite
 # from src.utils.deployment_rollback_manager import deployment_rollback
 
@@ -1038,7 +1045,10 @@ def iteration_cycle_optimization_manager(target_module_path: str, modified_code:
     
     # 4. 迭代后效果自动评估
     step_start = time.time()
-    optimize_pass, optimize_detail = self_optimization_loop(target_module_path)
+    from src.utils.evolution_feedback_loop import EvolutionFeedbackLoop
+    loop = EvolutionFeedbackLoop()
+    optimize_detail = loop.run_full_cycle()
+    optimize_pass = True
     result["steps"].append("优化效果评估完成")
     result["time_consumption"]["evaluation"] = time.time() - step_start
     

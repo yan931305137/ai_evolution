@@ -24,7 +24,6 @@ wheels/
 venv/
 ENV/
 env/
-.venv/
 
 # IDE
 .vscode/
@@ -38,7 +37,6 @@ env/
 .coverage
 htmlcov/
 .tox/
-.nox/
 
 # 数据
 data/chroma_db/
@@ -48,25 +46,25 @@ data/chroma_db/
 # 日志
 *.log
 logs/
-reports/cycle_*.json
 
 # 临时文件
 tmp/
 temp/
 *.tmp
-workspace/
 
 # 系统文件
 .DS_Store
 Thumbs.db
 
-# 环境变量
-.env
-.env.local
+# Git
+.git/
+.gitignore
+
+# 文档构建
+docs/_build/
+site/
 
 # 其他
+.coverage
 .mypy_cache/
-.dmypy.json
 .ipynb_checkpoints/
-*.pem
-*.key

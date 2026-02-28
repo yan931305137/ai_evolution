@@ -16,14 +16,13 @@ llm:
   # ============================================
   
   # ark
-  api_key: "21ba1178-abe6-4b34-9e83-f46b2af0e057"
-  base_url: "https://ark.cn-beijing.volces.com/api/v3"
+  # api_key: "21ba1178-abe6-4b34-9e83-f46b2af0e057"
+  # base_url: "https://ark.cn-beijing.volces.com/api/v3"
   
   # coze
   # api_key: "UVhibGNLSDA1ZVk3SUJVV0xKaGxmOEVmdkhTOUZNbXA6QVp2OG1CdU1IVFFmRDdOc2xZSkpFd2lrdmVvTFdyWjdmb0Mzc25XZFBMOUgwaXJFR1p3NFRKS1gzUnV2enU2NA=="
-  # base_url:"https://integration.coze.cn/api/v3"
+  # base_url: "https://integration.coze.cn/api/v3"
 
-  
   model_name: doubao-seed-2-0-pro-260215
   temperature: 0.7
   timeout: 600
@@ -198,94 +197,3 @@ screening_criteria:
     overall_threshold:
       high_quality: 80  # 高质量阈值
       medium_quality: 60  # 中等质量阈值
-      low_quality: 40  # 低质量阈值
-  
-  # 广告识别标准
-  ad_detection:
-    ad_density_threshold: 0.3  # 广告密度阈值（30%）
-    suspicious_keywords:
-      - "广告"
-      - "赞助"
-      - "推广"
-      - "sponsored"
-      - "ad"
-    suspicious_domains:
-      - "doubleclick.net"
-      - "googleadservices.com"
-  
-  # 优质源筛选阈值
-  quality_source_threshold:
-    min_authority_score: 60  # 最低权威性分数
-    min_stability_score: 50  # 最低稳定性分数
-    min_content_score: 55  # 最低内容质量分数
-    min_overall_score: 65  # 最低综合分数
-    max_ad_ratio: 0.25  # 最大广告占比（25%）
-
-# 清理规则配置
-cleanup_rules:
-  # 低质源识别规则
-  low_quality_identification:
-    # 长期未更新
-    no_update_threshold_days: 90  # 超过90天未更新
-    
-    # 广告占比过高
-    max_ad_ratio: 0.4  # 超过40%广告内容
-    
-    # 质量评分过低
-    min_quality_score: 30  # 低于30分
-    
-    # 错误率过高
-    max_error_rate: 0.5  # 错误率超过50%
-  
-  # 自动清理策略
-  auto_cleanup:
-    enabled: true
-    cleanup_interval_days: 7  # 清理间隔（天）
-    batch_size: 100  # 每次清理数量限制
-    dry_run_mode: false  # 是否为试运行模式（不真正删除）
-  
-  # 清理执行方式
-  cleanup_execution:
-    # 取消订阅（对于订阅类源）
-    unsubscribe_enabled: true
-    
-    # 标记为不可用（非删除）
-    mark_as_disabled: true
-    
-    # 完全删除（谨慎使用）
-    permanent_delete: false
-  
-  # 清理通知
-  cleanup_notification:
-    enabled: true
-    notification_channels:
-      - "log"  # 日志记录
-      - "email"  # 邮件通知（可选）
-      - "dashboard"  # 仪表板显示
-    summary_report: true  # 生成清理汇总报告
-
-# 统计分析配置
-analytics:
-  # 有效信息占比统计
-  effectiveness_metrics:
-    enabled: true
-    calculation_period_days: 30  # 统计周期（天）
-    metrics:
-      - "valid_info_ratio"  # 有效信息占比
-      - "update_frequency"  # 更新频率
-      - "quality_score"  # 质量评分
-      - "ad_ratio"  # 广告占比
-      - "error_rate"  # 错误率
-  
-  # 报告生成
-  reporting:
-    enabled: true
-    report_interval_days: 7  # 报告生成间隔
-    report_types:
-      - "daily_summary"  # 日汇总
-      - "weekly_trend"  # 周趋势
-      - "monthly_analysis"  # 月分析
-    export_formats:
-      - "json"
-      - "csv"
-      - "markdown"
