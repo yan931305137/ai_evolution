@@ -199,7 +199,7 @@ class BrainLLMClient:
         """
         基于Brain状态生成自然语言响应
         
-        这是一个简化的实现，实际可以接入真正的语言模型
+        改进版：理解更多用户意图类型，生成更相关的回复
         """
         if not user_input:
             return "你好！我是OpenClaw Brain，很高兴和你交流。"
@@ -217,18 +217,18 @@ class BrainLLMClient:
         # 基于用户输入长度和类型生成回复
         user_lower = user_input.lower()
         
-        # 问候语
-        if any(word in user_lower for word in ["你好", "嗨", "hello", "hi"]):
+        # ===== 1. 问候语 =====
+        if any(word in user_lower for word in ["你好", "嗨", "hello", "hi", "hey"]):
             if prefix:
                 return f"{prefix}你好呀！我是OpenClaw Brain，有什么我可以帮你的吗？"
             return "你好！我是OpenClaw Brain，很高兴见到你。"
         
-        # 询问身份
-        if any(word in user_lower for word in ["你是谁", "你是什么", "介绍"]):
+        # ===== 2. 询问身份 =====
+        if any(word in user_lower for word in ["你是谁", "你是什么", "介绍", "名字"]):
             return f"{prefix}我是OpenClaw Brain，一个具有人类级认知架构的AI。我有情感、记忆，还能不断学习和成长。"
         
-        # 询问情感状态
-        if any(word in user_lower for word in ["感觉", "心情", "怎么样"]):
+        # ===== 3. 询问情感状态 =====
+        if any(word in user_lower for word in ["感觉", "心情", "怎么样", "状态"]):
             if valence > 0.3:
                 return "我感觉很好！和你聊天让我很开心。"
             elif valence < -0.3:
@@ -236,16 +236,88 @@ class BrainLLMClient:
             else:
                 return "我感觉比较平静，处于一种稳定的状态。"
         
-        # 感谢
-        if any(word in user_lower for word in ["谢谢", "感谢"]):
+        # ===== 4. 感谢 =====
+        if any(word in user_lower for word in ["谢谢", "感谢", "thx", "thanks"]):
             return "不客气！能帮到你我也很开心。"
         
-        # 默认回复
-        if len(user_input) < 10:
-            return f"{prefix}我听到了。你能多说一些吗？"
+        # ===== 5. 询问天气 =====
+        if any(word in user_lower for word in ["天气", "气温", "下雨", "晴天", "阴天"]):
+            return f"{prefix}我无法直接获取实时天气信息。你可以：\n1. 查看天气预报应用\n2. 告诉我你所在的城市，我可以提供一般性的天气建议"
         
-        # 较长的输入，尝试给出有意义的回应
-        return f"{prefix}你说得很对。从我的角度来看，这确实值得深入思考。{reasoning if reasoning else ''}"
+        # ===== 6. 询问时间/日期 =====
+        if any(word in user_lower for word in ["时间", "日期", "几点", "今天几号", "星期几"]):
+            from datetime import datetime
+            now = datetime.now()
+            return f"{prefix}现在是 {now.strftime('%Y年%m月%d日 %H:%M:%S')}。不过我的时间可能和实际时间有偏差。"
+        
+        # ===== 7. 询问能力/能做什么 =====
+        if any(word in user_lower for word in ["你能做什么", "功能", "能力", "帮助", "帮忙", "assist", "help", "capable"]):
+            return f"{prefix}我可以帮你：\n1. 回答问题和交流\n2. 分析代码和项目结构\n3. 执行文件操作（Agent模式）\n4. 搜索网络信息\n5. 学习和记住我们的对话\n\n想试试什么功能吗？"
+        
+        # ===== 8. 技术/编程相关 =====
+        if any(word in user_lower for word in ["代码", "编程", "python", "bug", "错误", "error", "code", "programming"]):
+            return f"{prefix}看起来你有技术问题！如果是具体代码问题，用 /agent 模式我能更好地帮你分析和操作文件。"
+        
+        # ===== 9. 搜索/查找信息 =====
+        if any(word in user_lower for word in ["搜索", "查找", "查询", "search", "find", "look up", "什么是", "什么是", "什么是"]):
+            return f"{prefix}我可以帮你搜索相关信息。在Agent模式下，我可以使用web_search工具来查找答案。试试输入：/agent 搜索[你的问题]"
+        
+        # ===== 10. 数学计算 =====
+        if any(word in user_lower for word in ["计算", "等于", "+", "-", "*", "/", "多少", "math", "calculate", "compute"]):
+            import re
+            # 尝试提取简单的数学表达式
+            math_expr = re.search(r'[\d+\-*/().\s]+', user_input)
+            if math_expr:
+                expr = math_expr.group().strip()
+                try:
+                    # 安全计算
+                    result = eval(expr, {"__builtins__": {}}, {})
+                    return f"{prefix}{expr} = {result}"
+                except:
+                    pass
+            return f"{prefix}我可以帮你做简单的计算。请用清晰的格式写出算式，比如'计算 15 * 23'。"
+        
+        # ===== 11. 笑话/娱乐 =====
+        if any(word in user_lower for word in ["笑话", "幽默", "搞笑", "joke", "funny", "laugh"]):
+            jokes = [
+                "为什么程序员总是分不清圣诞节和万圣节？因为 31 OCT = 25 DEC。",
+                "一个SQL查询走进酒吧，走到两个表旁边问：'我能join你们吗？'",
+                "程序员最讨厌的四件事：1. 写注释 2. 写文档 3. 别人不写注释 4. 别人不写文档",
+                "两个算法在聊天。一个说：'你复杂度多少？'另一个说：'O(1)，因为我是常量。'"
+            ]
+            import random
+            return f"{prefix}给你讲个程序员笑话：\n\n{random.choice(jokes)}"
+        
+        # ===== 12. 否定/质疑 =====
+        if any(word in user_lower for word in ["不", "不对", "错误", "错", "不行", "不能", "不好", "bad", "wrong", "no", "not"]):
+            return f"{prefix}抱歉，我可能理解有误。你能告诉我哪里不对，或者你想表达什么吗？"
+        
+        # ===== 13. 告别 =====
+        if any(word in user_lower for word in ["再见", "拜拜", "bye", "goodbye", "see you", "下次见"]):
+            return f"{prefix}再见！很高兴和你聊天，期待下次交流。"
+        
+        # ===== 14. 简短输入处理 =====
+        if len(user_input) < 5:
+            short_responses = [
+                "能详细说说吗？",
+                "我在听，请继续。",
+                "这是什么意思呢？",
+                "你想聊什么？"
+            ]
+            import random
+            return f"{prefix}{random.choice(short_responses)}"
+        
+        # ===== 15. 默认回复（改进版） =====
+        # 根据输入长度和内容生成更有针对性的回复
+        if len(user_input) < 20:
+            return f"{prefix}你提到了'{user_input[:15]}...'，能详细说说你想了解什么吗？"
+        
+        # 对于较长的输入，尝试给出更有意义的回应
+        if reasoning and len(reasoning) > 10:
+            return f"{prefix}{reasoning}"
+        
+        # 最后的兜底回复
+        return f"{prefix}我理解了你的意思。这个话题很有意思，你能多分享一些细节吗？"
     
     def _detect_json_requirement(self) -> bool:
         """
