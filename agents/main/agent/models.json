@@ -1,0 +1,96 @@
+{
+  "providers": {
+    "coze": {
+      "baseUrl": "https://integration.coze.cn/api/v3",
+      "apiKey": "bzVQMFk4RVRJYW5FalRrT3ljYTBsbXRaNjBpbzhVRWo6ZkdIdHE5blJBN2xwbXg0czRNQWZTRkFTM3E2TXJSQzd3aVl4cFhXdG0wMU1hVHRQSFZoNmNReHppSDhybUJacQ==",
+      "api": "openai-completions",
+      "models": [
+        {
+          "id": "kimi-k2-5-260127",
+          "name": "Kimi K2.5",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 256000,
+          "maxTokens": 8192,
+          "api": "openai-completions"
+        },
+        {
+          "id": "glm-4-7-251222",
+          "name": "GLM 4.7",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 200000,
+          "maxTokens": 8192,
+          "api": "openai-completions"
+        },
+        {
+          "id": "deepseek-v3-2-251201",
+          "name": "DeepSeek 3.2",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 96000,
+          "maxTokens": 8192,
+          "api": "openai-completions"
+        },
+        {
+          "id": "deepseek-r1-250528",
+          "name": "DeepSeek R1",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 96000,
+          "maxTokens": 8192,
+          "api": "openai-completions"
+        },
+        {
+          "id": "doubao-seed-1-8-251228",
+          "name": "豆包 1.8",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 128000,
+          "maxTokens": 8192,
+          "api": "openai-completions"
+        }
+      ]
+    }
+  }
+}
