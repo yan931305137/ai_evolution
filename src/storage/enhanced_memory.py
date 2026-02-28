@@ -17,6 +17,30 @@ from src.utils.llm import LLMClient
 from src.utils.needs import Needs
 from src.utils.emotions import EmotionType
 from src.utils.constants import CHROMA_DB_DIR
+from chromadb import EmbeddingFunction, Documents, Embeddings
+
+class SimpleEmbeddingFunction(EmbeddingFunction):
+    """
+    Simple fallback embedding function using basic hash-based approach.
+    No external model download required.
+    """
+    def __init__(self, model_name: str = "simple"):
+        self.model_name = model_name
+    
+    def _simple_hash_embed(self, text: str) -> np.ndarray:
+        """Simple hash-based embedding for fallback"""
+        import hashlib
+        hash_obj = hashlib.md5(text.encode('utf-8'))
+        hash_hex = hash_obj.hexdigest()
+        vector = []
+        for i in range(0, len(hash_hex), 2):
+            val = int(hash_hex[i:i+2], 16) / 255.0
+            vector.extend([val] * 3)
+        return np.array(vector[:384], dtype=np.float32)
+    
+    def __call__(self, input: Documents) -> Embeddings:
+        embeddings = [self._simple_hash_embed(text) for text in input]
+        return embeddings
 
 class MemoryType(Enum):
     """记忆类型"""
@@ -75,21 +99,13 @@ class EnhancedMemorySystem:
         self._init_chroma()
     
     def _init_chroma(self):
-        """初始化ChromaDB"""
+        """初始化ChromaDB - 使用SimpleEmbedding，无需下载模型"""
         try:
-            # 使用简化的embedding函数
-            from chromadb.utils import embedding_functions
-            
             self.client = chromadb.PersistentClient(path=self.db_path)
             
-            # 使用简单的sentence transformer embedding
-            try:
-                ef = embedding_functions.SentenceTransformerEmbeddingFunction(
-                    model_name="all-MiniLM-L6-v2"
-                )
-            except:
-                # 如果sentence transformer不可用，使用默认embedding
-                ef = None
+            # 使用Simple Embedding，避免下载大模型
+            ef = SimpleEmbeddingFunction()
+            logging.info("EnhancedMemory: Using simple hash-based embedding (no model download)")
             
             # 创建集合
             self.conversations = self.client.get_or_create_collection(

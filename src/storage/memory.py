@@ -5,58 +5,34 @@ import logging
 import numpy as np
 from typing import List, Dict, Optional, Any
 from chromadb import EmbeddingFunction, Documents, Embeddings
-from chromadb.utils import embedding_functions
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from src.utils.llm import LLMClient
-
 from src.utils.needs import Needs
-
-class SilentSentenceTransformerEmbeddingFunction(EmbeddingFunction):
-    """
-    Custom embedding function that disables the tqdm progress bar
-    to prevent thread crashes on Windows.
-    """
-    def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
-        try:
-            from sentence_transformers import SentenceTransformer
-            self.model = SentenceTransformer(model_name)
-        except ImportError:
-            raise ImportError("sentence_transformers is not installed.")
-
-    def __call__(self, input: Documents) -> Embeddings:
-        # Explicitly disable progress bar
-        embeddings = self.model.encode(input, convert_to_numpy=True, show_progress_bar=False)
-        # Convert to list of numpy arrays as expected by Chroma
-        return [np.array(embedding, dtype=np.float32) for embedding in embeddings]
-
+from src.utils.constants import CHROMA_DB_DIR
 
 class SimpleEmbeddingFunction(EmbeddingFunction):
     """
-    Simple fallback embedding function using basic TF-IDF-like approach.
-    Used when sentence-transformers is not available.
+    Simple embedding function using hash-based approach.
+    No external model download required.
     """
     def __init__(self, model_name: str = "simple"):
         self.model_name = model_name
     
     def _simple_hash_embed(self, text: str) -> np.ndarray:
-        """Simple hash-based embedding for fallback"""
-        # Create a fixed-size embedding using character hash
+        """Simple hash-based embedding"""
         import hashlib
         hash_obj = hashlib.md5(text.encode('utf-8'))
         hash_hex = hash_obj.hexdigest()
-        # Convert to 384-dim vector (matching default model size)
         vector = []
         for i in range(0, len(hash_hex), 2):
             val = int(hash_hex[i:i+2], 16) / 255.0
-            vector.extend([val] * 3)  # Repeat to get 384 dimensions
+            vector.extend([val] * 3)
         return np.array(vector[:384], dtype=np.float32)
     
     def __call__(self, input: Documents) -> Embeddings:
         embeddings = [self._simple_hash_embed(text) for text in input]
         return embeddings
-
-from src.utils.constants import CHROMA_DB_DIR
 
 class MemorySystem:
     """

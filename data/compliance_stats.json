@@ -202,5 +202,128 @@
       "project_rules": {},
       "total_pass": true
     }
+  },
+  {
+    "timestamp": 1772281322.8022127,
+    "file_path": "agent_learning/requirements.txt",
+    "content_type": "code_script",
+    "pass": false,
+    "detail": {
+      "path_check": {
+        "path_compliance": false,
+        "temp_tag_compliance": true,
+        "violation_details": [
+          "存储路径不符合规则，code_script类型内容应存储在以下路径前缀下: ./scripts/"
+        ],
+        "suggestion": "合规校验不通过，请根据违规详情修正后再执行操作"
+      },
+      "security_check": {},
+      "project_rules": {},
+      "total_pass": false
+    }
+  },
+  {
+    "timestamp": 1772281322.8022127,
+    "file_path": "./scripts/agent_learning/requirements.txt",
+    "content_type": "code_script",
+    "pass": true,
+    "detail": {
+      "path_check": {
+        "path_compliance": true,
+        "temp_tag_compliance": true,
+        "violation_details": [],
+        "suggestion": "合规校验通过"
+      },
+      "security_check": {},
+      "project_rules": {},
+      "total_pass": true
+    }
+  },
+  {
+    "timestamp": 1772281322.8022127,
+    "file_path": "./scripts/agent_learning/docs/agent_core_principle.md",
+    "content_type": "doc",
+    "pass": false,
+    "detail": {
+      "path_check": {
+        "path_compliance": false,
+        "temp_tag_compliance": true,
+        "violation_details": [
+          "存储路径不符合规则，doc类型内容应存储在以下路径前缀下: ./docs/"
+        ],
+        "suggestion": "合规校验不通过，请根据违规详情修正后再执行操作"
+      },
+      "security_check": {},
+      "project_rules": {},
+      "total_pass": false
+    }
+  },
+  {
+    "timestamp": 1772281322.8022127,
+    "file_path": "./docs/agent_learning/agent_core_principle.md",
+    "content_type": "doc",
+    "pass": true,
+    "detail": {
+      "path_check": {
+        "path_compliance": true,
+        "temp_tag_compliance": true,
+        "violation_details": [],
+        "suggestion": "合规校验通过"
+      },
+      "security_check": {},
+      "project_rules": {},
+      "total_pass": true
+    }
+  },
+  {
+    "timestamp": 1772281322.8022127,
+    "file_path": "./scripts/agent_learning/langgraph_examples/retrieval_agent.py",
+    "content_type": "code_script",
+    "pass": true,
+    "detail": {
+      "path_check": {
+        "path_compliance": true,
+        "temp_tag_compliance": true,
+        "violation_details": [],
+        "suggestion": "合规校验通过"
+      },
+      "security_check": {},
+      "project_rules": {},
+      "total_pass": true
+    }
+  },
+  {
+    "timestamp": 1772281322.8022127,
+    "file_path": "./scripts/agent_learning/langgraph_examples/data_processing_agent.py",
+    "content_type": "code_script",
+    "pass": true,
+    "detail": {
+      "path_check": {
+        "path_compliance": true,
+        "temp_tag_compliance": true,
+        "violation_details": [],
+        "suggestion": "合规校验通过"
+      },
+      "security_check": {},
+      "project_rules": {},
+      "total_pass": true
+    }
+  },
+  {
+    "timestamp": 1772281322.8022127,
+    "file_path": "./scripts/agent_learning/langgraph_examples/tool_calling_agent.py",
+    "content_type": "code_script",
+    "pass": true,
+    "detail": {
+      "path_check": {
+        "path_compliance": true,
+        "temp_tag_compliance": true,
+        "violation_details": [],
+        "suggestion": "合规校验通过"
+      },
+      "security_check": {},
+      "project_rules": {},
+      "total_pass": true
+    }
   }
 ]
