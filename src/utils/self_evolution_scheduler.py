@@ -13,7 +13,7 @@ from typing import List, Dict, Tuple, Optional
 from datetime import datetime, timedelta
 from dataclasses import asdict
 from src.utils.autonomous_demand_system import AutonomousDemandSystem, IterationDemand, DemandPriority
-from src.tools.skills import autonomous_iteration_pipeline, generate_iteration_plan
+from src.skills.evolution_skills import autonomous_iteration_pipeline, generate_iteration_plan
 from src.utils.constants import OPTIMIZATION_HISTORY_FILE
 
 class SelfEvolutionScheduler:

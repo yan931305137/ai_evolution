@@ -22,7 +22,8 @@ from pathlib import Path
 
 # 导入现有模块
 from src.utils.hot_reload_manager import hot_reload_manager
-# from src.tools.skills import deployment_rollback_manager, autonomous_iteration_pipeline
+# from src.skills.security_skills import deployment_rollback_manager
+# from src.skills.evolution_skills import autonomous_iteration_pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +85,12 @@ class TestValidationManager:
                 logger.info("全量测试校验通过，新版本正式生效")
                 return True, f"{reload_msg}，全量测试通过，覆盖率{test_result.coverage_rate:.1f}%"
             else:
-                error_msg = f"{reload_msg}，全量测试不通过，通过率{test_result.passed_cases/test_result.total_cases*100:.1f}%，覆盖率{test_result.coverage_rate:.1f}%"
+                # 避免除零错误
+                if test_result.total_cases > 0:
+                    pass_rate = test_result.passed_cases / test_result.total_cases * 100
+                    error_msg = f"{reload_msg}，全量测试不通过，通过率{pass_rate:.1f}%，覆盖率{test_result.coverage_rate:.1f}%"
+                else:
+                    error_msg = f"{reload_msg}，全量测试不通过，无测试用例，覆盖率{test_result.coverage_rate:.1f}%"
                 logger.error(error_msg)
                 return False, error_msg
 
@@ -223,7 +229,7 @@ class TestValidationManager:
         if self.auto_repair_enabled:
             logger.info("自动触发代码修复流程")
             try:
-                from src.tools.skills import autonomous_iteration_pipeline
+                from src.skills.evolution_skills import autonomous_iteration_pipeline
                 # 调用自主迭代管道进行修复
                 repair_result = autonomous_iteration_pipeline(
                     target_module_path="",  # 留空自动识别问题模块

@@ -34,6 +34,10 @@
     ],
     "doc": [
       "./docs/"
+    ],
+    "design": [
+      "./brain/docs/",
+      "./docs/design/"
     ]
   },
   "FORBID_DELETE_PATH_PREFIXES": [

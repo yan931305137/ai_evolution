@@ -390,14 +390,16 @@ EFFICIENT WORKFLOW:
         """Run autonomously indefinitely, executing full self-evolution closed-loop workflow sequentially."""
         console.print("[bold green]Starting continuous autonomous self-evolution closed-loop system...[/bold green]")
         # 导入所有闭环所需的技能函数
-        from src.tools.skills import (
+        from src.skills.evolution_skills import (
             collect_runtime_operation_data,
             identify_evolution_problems,
             generate_iteration_plan,
+            autonomous_iteration_pipeline
+        )
+        from src.skills.security_skills import (
             code_security_verification,
             grayscale_test_executor,
-            deployment_rollback_manager,
-            autonomous_iteration_pipeline
+            deployment_rollback_manager
         )
         import time
         iteration_count = 0

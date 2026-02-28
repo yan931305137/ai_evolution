@@ -227,7 +227,8 @@ def generation_content_compliance_check(
         "data_training": ["./training/"],
         "output_report": ["./reports/"],
         "output_temp": ["./tmp/"],
-        "doc": ["./docs/"]
+        "doc": ["./docs/"],
+        "design": ["./brain/docs/", "./docs/design/"]
     }
     
     result = {

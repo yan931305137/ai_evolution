@@ -20,7 +20,7 @@ from src.utils.llm import LLMClient
 
 # 导入自定义技能
 try:
-    from src.tools.skills import grayscale_test_executor, deployment_rollback_manager
+    from src.skills.security_skills import grayscale_test_executor, deployment_rollback_manager
 except ImportError:
     # 技能未创建时使用模拟实现
     def grayscale_test_executor(module_path: str, test_cases: List[str] = None, coverage_threshold: float = 80.0) -> Tuple[bool, Dict]:
