@@ -82,6 +82,10 @@ class Tools:
     replace_in_files = staticmethod(replace_in_files)
     count_lines = staticmethod(count_lines)
     extract_strings = staticmethod(extract_strings)
+    # Top3高优先级核心能力工具
+    autonomous_iteration_pipeline = staticmethod(skills.autonomous_iteration_pipeline)
+    code_security_verification = staticmethod(skills.code_security_verification)
+    grayscale_test_executor = staticmethod(skills.grayscale_test_executor)
 
     @classmethod
     def get_tool_descriptions(cls) -> str:
