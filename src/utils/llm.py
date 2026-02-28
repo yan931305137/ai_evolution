@@ -105,6 +105,10 @@ class LLMClient:
             self._brain_client = BrainLLMClient(**init_params)
             self.model_name = self._brain_client.model_name
             
+            # 设置兼容属性（Brain模式不需要API Key）
+            self.api_key = "brain_mode_no_api_key_needed"
+            self.base_url = "local_brain"
+            
             logging.info(f"🧠 LLMClient已切换到Brain模式 | 模型: {self.model_name}")
             logging.info(f"   配置来源: config.yaml | 婴儿模式: {init_params['start_as_infant']}")
             
