@@ -176,6 +176,19 @@
       ],
       "auto_delete": false,
       "last_verified_at": "2026-02-28T22:50:57.765767"
+    },
+    "doc_7b0ffbc8": {
+      "doc_id": "doc_7b0ffbc8",
+      "path": "./docs/standard/skill_lifecycle_management_spec.md",
+      "title": "技能/工具全生命周期管理规范",
+      "task_id": "task_20ed0b76",
+      "created_at": "2026-02-28T23:00:47.688000",
+      "ttl_days": 30,
+      "status": "active",
+      "doc_type": "standard",
+      "related_files": [],
+      "auto_delete": false,
+      "last_verified_at": "2026-02-28T23:00:47.688003"
     }
   }
 }
