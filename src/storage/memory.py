@@ -82,13 +82,10 @@ class MemorySystem:
                 # Initialize persistent client
                 self.client = chromadb.PersistentClient(path=db_path)
             
-            # Try to use sentence-transformers, fallback to simple embedding
-            try:
-                ef = SilentSentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
-                logging.info("Using sentence-transformers for embeddings")
-            except Exception as e:
-                logging.warning(f"Failed to load sentence-transformers ({e}), using simple embedding")
-                ef = SimpleEmbeddingFunction()
+            # 强制使用 Simple Embedding，避免下载大模型
+            # 如需更好的语义搜索，可改用 API embedding
+            ef = SimpleEmbeddingFunction()
+            logging.info("Using simple hash-based embedding (no model download)")
             
             self.conversations = self.client.get_or_create_collection(
                 name="conversations",
