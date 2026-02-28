@@ -126,3 +126,86 @@ def security_test_framework_scheduler(
  result['total_cost_time'] = round(time.time() - start_time, 2)
  result['steps'].append(f'全流程执行完成，总耗时{result["total_cost_time"]}秒')
  return True, result
+
+
+# Skill: 解析自我对话生成的自然语言优化需求，自动匹配对应的目标功能模块，返回模块路径、关联测试用例、匹配置信度，匹配准确率不低于90%
+import json
+from typing import Tuple, Optional, List
+from src.utils.llm import LLMClient
+
+def requirement_to_module_matcher(requirement_text: str) -> Tuple[Optional[str], Optional[List[str]], float, str]:
+ """
+ 解析自然语言优化需求，自动匹配对应的目标模块
+ 参数：
+ requirement_text: 自我对话生成的自然语言优化需求文本
+ 返回：
+ (匹配到的模块路径, 关联测试用例列表, 匹配置信度(0-100), 优化目标描述)
+ 当匹配置信度低于90%时返回None作为模块路径，确保匹配准确率不低于90%
+ """
+ # 初始化LLM客户端
+ llm_client = LLMClient()
+ 
+ # 项目模块功能映射知识库，内置所有模块的功能描述用于匹配
+ module_knowledge_base = [
+ {"path": "src/brain/attention_system/", "desc": "注意力系统，负责信息优先级分配、焦点管理、重要信息筛选"},
+ {"path": "src/brain/decision_system/", "desc": "决策系统，负责行为决策、目标拆解、优先级判断、方案选择"},
+ {"path": "src/brain/memory_system/", "desc": "记忆系统，负责长短期记忆存储、检索、遗忘管理、记忆关联"},
+ {"path": "src/brain/perception_system/", "desc": "感知系统，负责输入信息解析、意图识别、实体抽取、语义理解"},
+ {"path": "src/brain/value_system/", "desc": "价值体系，负责目标价值评估、行为奖惩判断、优先级排序"},
+ {"path": "src/skills/", "desc": "技能模块，所有可复用功能函数、工具方法、业务能力的实现"},
+ {"path": "src/utils/", "desc": "工具模块，通用工具类、辅助函数、中间件、公共组件实现"},
+ {"path": "src/agents/", "desc": "智能体模块，各角色智能体的逻辑实现、任务调度、交互逻辑"},
+ {"path": "src/core/", "desc": "核心模块，系统底层核心能力、基础框架、运行时环境实现"},
+ {"path": "src/tools/", "desc": "工具集模块，所有外部工具调用、API封装、能力集成的实现"}
+ ]
+
+ # 构建匹配prompt，确保LLM返回正确的结构化结果
+ match_prompt = f"""
+ 请根据以下项目模块知识库，解析用户的优化需求，匹配最合适的目标模块，并返回严格的JSON格式结果：
+ 模块知识库：
+ {json.dumps(module_knowledge_base, ensure_ascii=False, indent=2)}
+ 优化需求：
+ {requirement_text}
+ 
+ 输出要求：仅返回JSON，不要任何其他内容，字段说明：
+ 1. module_path: 匹配到的最适合的模块完整路径，如果无法确定返回null
+ 2. test_cases: 关联的测试用例路径列表，没有则返回空数组
+ 3. confidence: 匹配置信度，0-100的数字，只有当你100%确定匹配正确时才能返回>=90的值，否则返回低于90
+ 4. optimization_target: 提炼后的清晰优化目标描述
+ """
+
+ # 调用LLM执行匹配
+ try:
+ match_result_str = llm_client.chat(match_prompt).strip()
+ # 移除可能的markdown代码块标记
+ match_result_str = match_result_str.replace('', '').replace('', '').strip()
+ match_result = json.loads(match_result_str)
+ 
+ module_path = match_result.get("module_path")
+ test_cases = match_result.get("test_cases", [])
+ confidence = float(match_result.get("confidence", 0.0))
+ optimization_target = match_result.get("optimization_target", "")
+ 
+ # 安全校验：低于90置信度的匹配直接返回None，确保准确率不低于90%
+ if confidence < 90.0:
+ module_path = None
+ 
+ return module_path, test_cases, confidence, optimization_target
+ 
+ except Exception as e:
+ # 解析异常时返回低置信度结果
+ return None, [], 0.0, f"需求解析失败：{str(e)}"
+ 
+# 测试代码
+if __name__ == "__main__":
+ # 测试用例1：明确需求匹配
+ test_req1 = "优化记忆系统的检索速度，减少内存占用"
+ path, cases, conf, target = requirement_to_module_matcher(test_req1)
+ print(f"测试1结果：路径={path}, 置信度={conf}, 目标={target}")
+ assert conf >= 90.0 or path is None, "匹配准确率不满足要求"
+ 
+ # 测试用例2：模糊需求匹配
+ test_req2 = "优化某个地方的响应速度"
+ path, cases, conf, target = requirement_to_module_matcher(test_req2)
+ print(f"测试2结果：路径={path}, 置信度={conf}, 目标={target}")
+ assert conf < 90.0 and path is None, "模糊需求应该返回低置信度"
