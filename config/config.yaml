@@ -119,6 +119,51 @@ agent:
     max_tokens: 8000           # 最大 Token 数（约等于上下文窗口的80%）
     compress_threshold: 15     # 触发压缩的消息数阈值
     summary_length: 200        # 摘要长度（字符）
+  
+  # Multi-Agent Configuration
+  multi_agent:
+    enabled: true              # 是否启用多 Agent 模式
+    auto_detect: true          # 自动检测任务复杂度并决定是否使用多 Agent
+    complexity_threshold: 4    # 复杂度阈值，超过则使用多 Agent
+    max_parallel_tasks: 3      # 最大并行任务数
+    
+    # Specialist Agent 配置
+    specialists:
+      code:
+        max_steps: 50
+        max_messages: 15
+        max_tokens: 6000
+        compress_threshold: 10
+      test:
+        max_steps: 40
+        max_messages: 15
+        max_tokens: 6000
+        compress_threshold: 10
+      doc:
+        max_steps: 30
+        max_messages: 12
+        max_tokens: 5000
+        compress_threshold: 8
+      review:
+        max_steps: 30
+        max_messages: 12
+        max_tokens: 5000
+        compress_threshold: 8
+      analyze:
+        max_steps: 40
+        max_messages: 15
+        max_tokens: 6000
+        compress_threshold: 10
+      refactor:
+        max_steps: 50
+        max_messages: 15
+        max_tokens: 6000
+        compress_threshold: 10
+      debug:
+        max_steps: 50
+        max_messages: 15
+        max_tokens: 6000
+        compress_threshold: 10
 
 # Self-Evolution Configuration
 self_evolution:
