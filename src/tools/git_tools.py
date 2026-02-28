@@ -13,14 +13,30 @@ logger = logging.getLogger(__name__)
 def _run_git_command(args: List[str], cwd: Optional[str] = None) -> tuple:
     """执行Git命令并返回结果"""
     try:
+        # Use text=False to capture raw bytes and handle decoding manually
         result = subprocess.run(
             ['git'] + args,
             cwd=cwd,
             capture_output=True,
-            text=True,
-            timeout=30
+            text=False,
+            timeout=120
         )
-        return result.returncode, result.stdout, result.stderr
+        
+        def decode_output(data):
+            if not data:
+                return ""
+            try:
+                return data.decode('utf-8')
+            except UnicodeDecodeError:
+                try:
+                    return data.decode('gbk')
+                except UnicodeDecodeError:
+                    return data.decode('utf-8', errors='replace')
+
+        stdout = decode_output(result.stdout)
+        stderr = decode_output(result.stderr)
+        
+        return result.returncode, stdout, stderr
     except subprocess.TimeoutExpired:
         return -1, "", "命令执行超时"
     except FileNotFoundError:

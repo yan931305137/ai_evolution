@@ -46,16 +46,32 @@ def run_command(command: str) -> str:
             command = command.replace('mkdir -p', 'mkdir')
             
     try:
+        # Use text=False to capture raw bytes and handle decoding manually
+        # This prevents UnicodeDecodeError on Windows when tools output mixed encodings
         result = subprocess.run(
             command, 
             shell=True, 
             capture_output=True, 
-            text=True, 
-            timeout=30
+            text=False, 
+            timeout=120
         )
-        output = result.stdout
-        if result.stderr:
-            output += f"\nSTDERR: {result.stderr}"
+        
+        def decode_output(data):
+            if not data:
+                return ""
+            try:
+                return data.decode('utf-8')
+            except UnicodeDecodeError:
+                try:
+                    return data.decode('gbk')
+                except UnicodeDecodeError:
+                    return data.decode('utf-8', errors='replace')
+
+        output = decode_output(result.stdout)
+        stderr = decode_output(result.stderr)
+        
+        if stderr:
+            output += f"\nSTDERR: {stderr}"
         return output.strip() or "(Command executed with no output)"
     except subprocess.TimeoutExpired:
         return "Error: Command timed out."
