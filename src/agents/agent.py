@@ -306,14 +306,44 @@ EFFICIENT WORKFLOW:
             if action in ["write_file", "move_file"] and isinstance(action_input, dict):
                 target_file_path = action_input.get("file_path" if action == "write_file" else "dst", "")
                 if target_file_path:
-                    # 自动推断内容类型
+                    # 自动推断内容类型 - 增强版：路径匹配 + 扩展名推断
                     content_type = "unknown"
                     from pathlib import Path
+                    
+                    # 扩展名到内容类型的映射
+                    EXT_TYPE_MAPPING = {
+                        ".py": "code_core",
+                        ".js": "code_core",
+                        ".ts": "code_core",
+                        ".java": "code_core",
+                        ".go": "code_core",
+                        ".rs": "code_core",
+                        ".cpp": "code_core",
+                        ".c": "code_core",
+                        ".h": "code_core",
+                        ".yaml": "data_system",
+                        ".yml": "data_system",
+                        ".json": "data_system",
+                        ".toml": "data_system",
+                        ".md": "doc",
+                        ".rst": "doc",
+                        ".txt": "doc",
+                        ".html": "output_report",
+                        ".css": "output_report",
+                        ".sh": "code_script",
+                        ".bash": "code_script",
+                        ".zsh": "code_script",
+                        ".sql": "data_system",
+                        ".db": "data_system",
+                        ".sqlite": "data_system",
+                    }
+                    
                     try:
                         # 获取绝对路径以确保比较准确
                         abs_target = Path(target_file_path).resolve()
                         root_path = Path(".").resolve()
                         
+                        # 第一步：路径前缀匹配
                         for ctype, prefixes in STORAGE_PATH_RULES.items():
                             for prefix in prefixes:
                                 # 将规则前缀转换为绝对路径
@@ -324,6 +354,13 @@ EFFICIENT WORKFLOW:
                                     break
                             if content_type != "unknown":
                                 break
+                        
+                        # 第二步：如果路径匹配失败，尝试扩展名推断
+                        if content_type == "unknown":
+                            file_ext = Path(target_file_path).suffix.lower()
+                            if file_ext in EXT_TYPE_MAPPING:
+                                content_type = EXT_TYPE_MAPPING[file_ext]
+                                logger.debug(f"Inferred content type '{content_type}' from extension '{file_ext}'")
                     except Exception as e:
                         logger.warning(f"Failed to infer content type for path {target_file_path}: {e}")
                         # Fallback to string matching if path resolution fails
@@ -331,6 +368,15 @@ EFFICIENT WORKFLOW:
                              if any(target_file_path.startswith(prefix) for prefix in prefixes):
                                  content_type = ctype
                                  break
+                        
+                        # 扩展名 fallback
+                        if content_type == "unknown":
+                            try:
+                                file_ext = Path(target_file_path).suffix.lower()
+                                if file_ext in EXT_TYPE_MAPPING:
+                                    content_type = EXT_TYPE_MAPPING[file_ext]
+                            except:
+                                pass
                     # 自动判断是否为临时资源
                     is_temporary = any(flag in target_file_path for flag in ["./tmp/", ".tmp", ".cache"])
                     # 从 action_input 中提取用户命令覆盖标志
@@ -344,7 +390,18 @@ EFFICIENT WORKFLOW:
                     )
                     
                     if not compliance_pass:
-                        observation = f"合规校验不通过，操作已拦截：{';'.join(compliance_result['violation_details'])}，建议：{compliance_result['suggestion']}"
+                        # 提供更友好的错误信息
+                        violation = ';'.join(compliance_result['violation_details'])
+                        suggestion = compliance_result.get('suggestion', '')
+                        
+                        # 如果是 unknown 类型，提供更详细的指导
+                        if content_type == "unknown":
+                            suggestion = (f"无法自动识别文件类型。建议：\n"
+                                        f"1. 将文件移动到标准目录（如 ./src/, ./docs/, ./tests/ 等）\n"
+                                        f"2. 或使用 user_command_override=True 跳过校验\n"
+                                        f"3. 支持的类型: code_core, code_skill, doc, data_system 等")
+                        
+                        observation = f"合规校验不通过，操作已拦截：{violation}。{suggestion}"
                         console.print(f"[red]合规校验拦截: {observation}[/red]")
             
             # 合规校验通过才执行工具
