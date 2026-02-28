@@ -164,6 +164,13 @@ agent:
         max_messages: 15
         max_tokens: 6000
         compress_threshold: 10
+  
+  # Dynamic Agent Configuration
+  dynamic_agent:
+    enabled: true              # 启用动态 Agent 创建
+    max_agents: 10             # 最大动态 Agent 数量
+    auto_cleanup: true         # 自动清理不使用的 Agent
+    cleanup_after_minutes: 60  # 多久后自动清理（分钟）
 
 # Self-Evolution Configuration
 self_evolution:
@@ -171,6 +178,22 @@ self_evolution:
   iteration_interval_minutes: 30
   max_consecutive_failures: 3
   auto_restart: true
+  
+  # CI/CD Integration
+  cicd:
+    enabled: false              # 启用 CI/CD 自动化
+    auto_trigger: true          # 应用阶段后自动触发
+    branch: "evolution"         # 进化分支名称
+    create_pr: true             # 成功后自动创建 PR
+    auto_merge: false           # 是否自动合并（谨慎开启）
+    workflow: "ci.yml"          # CI 工作流文件名
+
+# GitHub Configuration
+github:
+  token: null                   # GitHub Personal Access Token
+  owner: null                   # 仓库所有者
+  repo: null                    # 仓库名称
+  # 或通过环境变量设置: GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO
 
 # Logging Configuration
 logging:

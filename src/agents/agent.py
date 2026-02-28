@@ -9,6 +9,8 @@ from src.utils.self_awareness import SelfAwarenessSystem # Import self-awareness
 from src.utils.user_profile import user_profile_manager # Import user profile system
 from src.utils.config import cfg # Import configuration
 from src.utils.context_compressor import ContextCompressor # Import context compressor
+from src.agents.dynamic_agent_factory import get_factory # Import dynamic agent factory
+from src.tools.agent_tools import set_global_llm # Import agent tools setup
 from rich.console import Console
 import os
 import sys
@@ -35,6 +37,13 @@ class AutoAgent:
             compress_threshold=cfg.get("agent.context.compress_threshold", 15),
             summary_length=cfg.get("agent.context.summary_length", 200)
         )
+        
+        # 初始化动态 Agent 系统
+        self.dynamic_agent_enabled = cfg.get("agent.dynamic_agent.enabled", True)
+        if self.dynamic_agent_enabled:
+            set_global_llm(llm)  # 设置全局 LLM 供 agent_tools 使用
+            self.agent_factory = get_factory(llm)
+            logger.info("Dynamic agent system initialized")
 
     def _retrieve_memory_context(self, goal: str) -> str:
         """Retrieve relevant memories based on the goal."""
@@ -146,6 +155,36 @@ AI ASSISTANT TOOLS GUIDE:
 - get_project_overview(): Get quick stats about the project (file count, LOC, etc.).
 - analyze_change_impact(file_path, description): Before modifying code, check what other files depend on it.
 - get_code_summary(file_path): Get a quick summary of a file without reading all of it.
+
+DYNAMIC AGENT GUIDE (For Complex Tasks):
+- spawn_agent(task_description, agent_name=None): Create a specialist agent for specific tasks
+  Example: spawn_agent("Write comprehensive unit tests", "test_specialist")
+- delegate_task(agent_id, subtask, context=None): Delegate work to spawned agent  
+  Example: delegate_task("test_specialist", "Write tests for auth.py")
+- list_spawned_agents(): Check existing agents and their status
+- get_agent_info(agent_id): Get detailed information about an agent
+- terminate_agent(agent_id): Clean up agent when done
+
+WHEN TO USE DYNAMIC AGENTS:
+- Multi-step complex tasks requiring different expertise
+- Tasks that can be parallelized (analysis + coding + testing)
+- Long-running tasks needing isolation
+- Specialized domains (security, performance, documentation)
+
+CI/CD AUTOMATION GUIDE:
+- trigger_ci_pipeline(branch='main', workflow='ci.yml', wait_for_completion=True): Run automated tests after code changes
+  Example: trigger_ci_pipeline(branch='feature/new-auth', wait_for_completion=True)
+- check_ci_status(run_id): Check build/test status
+- get_ci_logs(run_id, max_lines=100): View detailed logs for debugging
+- create_pr_from_branch(branch, title, body, base_branch='main'): Create PR after changes
+- merge_pull_request(pr_number): Merge PR after CI passes
+- run_evolution_ci_pipeline(): Complete pipeline for evolution (test + PR + optional merge)
+
+WHEN TO USE CI/CD:
+- After making code changes - run tests to verify
+- Before merging to main - ensure quality gates pass
+- After evolution cycles - automate testing and PR creation
+- For deployment - trigger deployment workflows
 
 EFFICIENT WORKFLOW:
 1. Use get_project_overview() or scan_project() to understand the codebase structure.

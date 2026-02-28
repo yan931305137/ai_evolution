@@ -15,6 +15,8 @@ from .file_utils_tools import delete_file, get_file_info, copy_file, rename_file
 from .git_tools import git_status, git_diff, git_add, git_commit, git_log, git_branch
 from .json_yaml_tools import read_json, write_json, update_json, read_yaml, write_yaml, validate_json
 from .text_processing_tools import find_in_files, replace_in_files, count_lines, extract_strings
+from .agent_tools import spawn_agent, delegate_task, list_spawned_agents, get_agent_info, terminate_agent, spawn_agents_for_project
+from .cicd_tools import trigger_ci_pipeline, check_ci_status, get_ci_logs, create_pr_from_branch, merge_pull_request, run_evolution_ci_pipeline
 
 class Tools:
     """Collection of tools for the AI agent to interact with the local system."""
@@ -82,6 +84,20 @@ class Tools:
     replace_in_files = staticmethod(replace_in_files)
     count_lines = staticmethod(count_lines)
     extract_strings = staticmethod(extract_strings)
+    # Dynamic Agent tools
+    spawn_agent = staticmethod(spawn_agent)
+    delegate_task = staticmethod(delegate_task)
+    list_spawned_agents = staticmethod(list_spawned_agents)
+    get_agent_info = staticmethod(get_agent_info)
+    terminate_agent = staticmethod(terminate_agent)
+    spawn_agents_for_project = staticmethod(spawn_agents_for_project)
+    # CI/CD tools
+    trigger_ci_pipeline = staticmethod(trigger_ci_pipeline)
+    check_ci_status = staticmethod(check_ci_status)
+    get_ci_logs = staticmethod(get_ci_logs)
+    create_pr_from_branch = staticmethod(create_pr_from_branch)
+    merge_pull_request = staticmethod(merge_pull_request)
+    run_evolution_ci_pipeline = staticmethod(run_evolution_ci_pipeline)
 
     @classmethod
     def get_tool_descriptions(cls) -> str:
@@ -153,6 +169,20 @@ class Tools:
             "52. replace_in_files(old_text, new_text, directory='.', file_pattern='*.py', preview=True): Replace text in multiple files.",
             "53. count_lines(directory='.', file_pattern='*.py'): Count code lines in files.",
             "54. extract_strings(file_path, min_length=5): Extract string literals from code files.",
+            # Dynamic Agent tools
+            "55. spawn_agent(task_description, agent_name=None): Create a new Specialist Agent for a specific task type. The agent will be tailored to the task requirements.",
+            "56. delegate_task(agent_id, subtask, context=None): Delegate a task to a previously created agent. The agent will execute independently and return results.",
+            "57. list_spawned_agents(): List all dynamically created agents with their status and statistics.",
+            "58. get_agent_info(agent_id): Get detailed information about a specific agent.",
+            "59. terminate_agent(agent_id): Delete a dynamic agent that is no longer needed.",
+            "60. spawn_agents_for_project(project_description): Create a team of agents for a complete project.",
+            # CI/CD tools
+            "61. trigger_ci_pipeline(branch='main', workflow='ci.yml', wait_for_completion=True): Trigger GitHub Actions CI/CD pipeline and wait for results.",
+            "62. check_ci_status(run_id): Check the status of a running or completed CI/CD pipeline.",
+            "63. get_ci_logs(run_id, max_lines=100): Get logs from a CI/CD pipeline run.",
+            "64. create_pr_from_branch(branch, title, body=None, base_branch='main'): Create a Pull Request from a branch.",
+            "65. merge_pull_request(pr_number, commit_message=None): Merge a Pull Request.",
+            "66. run_evolution_ci_pipeline(evolution_branch='evolution', create_pr=True, auto_merge=False): Complete CI/CD pipeline for evolution changes including test, PR creation, and optional auto-merge.",
         ]
         
         # 2. Dynamic Skills from src.tools.skills
