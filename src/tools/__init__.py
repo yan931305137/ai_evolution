@@ -2,12 +2,13 @@ import importlib
 import inspect
 from src.tools import skills
 
-from .file_tools import list_files, read_file, write_file, move_file, scan_project
+from .file_tools import list_files, read_file, write_file, move_file, scan_project, register_document, check_documents_status
 from .code_tools import modify_skill, patch_core_code, create_skill, patch_code
 from .system_tools import restart_system, run_command
 from .web_tools import get_weather, web_search
 from .repository_tools import list_github_repos, list_gitee_repos, list_all_repos, clone_repo, get_repo_info
 from .video_tools import generate_video_from_text, generate_video_from_image, generate_video_between_images
+from .ai_assistant_tools import analyze_code, search_code, get_project_overview, analyze_change_impact, get_code_summary
 
 class Tools:
     """Collection of tools for the AI agent to interact with the local system."""
@@ -26,6 +27,14 @@ class Tools:
     move_file = staticmethod(move_file)
     run_command = staticmethod(run_command)
     scan_project = staticmethod(scan_project)
+    register_document = staticmethod(register_document)
+    check_documents_status = staticmethod(check_documents_status)
+    # AI Assistant Tools
+    analyze_code = staticmethod(analyze_code)
+    search_code = staticmethod(search_code)
+    get_project_overview = staticmethod(get_project_overview)
+    analyze_change_impact = staticmethod(analyze_change_impact)
+    get_code_summary = staticmethod(get_code_summary)
     # Repository management tools
     list_github_repos = staticmethod(list_github_repos)
     list_gitee_repos = staticmethod(list_gitee_repos)
@@ -67,6 +76,15 @@ class Tools:
             "19. generate_video_from_text(prompt, resolution='720p', ratio='16:9', duration=5): Generate video from text description.",
             "20. generate_video_from_image(image_url, prompt=None, resolution='720p', ratio='16:9', duration=5): Generate video from image (first frame animation).",
             "21. generate_video_between_images(first_image_url, last_image_url, prompt=None, resolution='720p', ratio='16:9', duration=5): Generate video with smooth transition between first and last frames.",
+            # Document lifecycle tools
+            "22. register_document(doc_path, title, doc_type, task_goal, related_files=None): Register a document for lifecycle management. Types: analysis(7d,auto-del), design(14d,auto-del), learning(3d,auto-del), decision(perm), config(perm), standard(30d).",
+            "23. check_documents_status(): Check document status and show which documents need updates.",
+            # AI Assistant Tools
+            "24. analyze_code(file_path=None, function_name=None, class_name=None): Analyze code structure. Finds function/class definitions, shows args, docstrings, complexity.",
+            "25. search_code(query, file_pattern='*.py'): Search for code patterns, function calls, variable usage across the project.",
+            "26. get_project_overview(): Get project statistics: file count, lines of code, function/class counts, directory structure.",
+            "27. analyze_change_impact(file_path, change_description): Analyze the impact of a code change - shows which files depend on the modified file.",
+            "28. get_code_summary(file_path, max_lines=50): Get a summary of a code file: imports, definitions, and first 50 lines of actual code.",
         ]
         
         # 2. Dynamic Skills from src.tools.skills

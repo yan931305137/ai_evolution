@@ -123,6 +123,29 @@ INSTRUCTIONS:
 }}
 5. If you need to check the result of an action, use the 'observation' from the previous step.
 6. When the goal is achieved, use the 'finish' action with a summary.
+
+DOCUMENT MANAGEMENT RULES:
+- When creating analysis/design/learning documents (MD files), you MUST call register_document() to track them.
+- Document types: analysis (7d, auto-delete), design (14d, auto-delete), learning (3d, auto-delete), decision (permanent), config (permanent), standard (30d).
+- After updating code, check_documents_status() to see if any documents need updates.
+- Only create documents that provide lasting value. Temporary analysis should use register-delete types.
+- Prefer inline comments and README files over separate documentation.
+
+AI ASSISTANT TOOLS GUIDE:
+- analyze_code(function_name=\"xxx\"): Find where a function is defined, see its arguments and complexity.
+- search_code(\"keyword\"): Search for code patterns across the entire project.
+- get_project_overview(): Get quick stats about the project (file count, LOC, etc.).
+- analyze_change_impact(file_path, description): Before modifying code, check what other files depend on it.
+- get_code_summary(file_path): Get a quick summary of a file without reading all of it.
+
+EFFICIENT WORKFLOW:
+1. Use get_project_overview() or scan_project() to understand the codebase structure.
+2. Use search_code() to find relevant code locations.
+3. Use analyze_code() to understand specific functions/classes.
+4. Use analyze_change_impact() before making changes to assess risk.
+5. Use get_code_summary() for quick file understanding.
+6. Make changes using patch_code() or write_file().
+7. Register any documents created with register_document().
 """
         
         # Initial conversation state
@@ -253,6 +276,18 @@ INSTRUCTIONS:
                     # 生成透明度展示内容并附加到回答末尾
                     transparency_display = answer_transparency_manager.generate_transparency_display(answer_id)
                     final_answer = summary + transparency_display
+                    
+                    # 新增：任务完成时清理文档
+                    try:
+                        from src.utils.doc_lifecycle import doc_lifecycle
+                        import hashlib
+                        task_id = f"task_{hashlib.md5(goal.encode()).hexdigest()[:8]}"
+                        cleanup_result = doc_lifecycle.cleanup_task_documents(task_id)
+                        if cleanup_result["deleted"] or cleanup_result["kept"]:
+                            console.print(f"\n[dim]📄 文档清理: {len(cleanup_result['deleted'])} 个已删除, {len(cleanup_result['kept'])} 个保留[/dim]")
+                    except Exception as e:
+                        logger.debug(f"文档清理失败（非关键）: {e}")
+                    
                     return final_answer
                 except Exception as e:
                     # 透明度模块加载失败时降级返回原始回答

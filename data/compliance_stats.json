@@ -325,5 +325,63 @@
       "project_rules": {},
       "total_pass": true
     }
+  },
+  {
+    "timestamp": 1772282298.138366,
+    "file_path": "./存量MD文件盘点台账.md",
+    "content_type": "output_report",
+    "pass": false,
+    "detail": {
+      "path_check": {
+        "path_compliance": false,
+        "temp_tag_compliance": true,
+        "violation_details": [
+          "禁止在项目根目录直接生成文件，请存入对应分类子目录",
+          "存储路径不符合规则，output_report类型内容应存储在以下路径前缀下: ./reports/"
+        ],
+        "suggestion": "合规校验不通过，请根据违规详情修正后再执行操作"
+      },
+      "security_check": {},
+      "project_rules": {},
+      "total_pass": false
+    }
+  },
+  {
+    "timestamp": 1772282298.138366,
+    "file_path": "./reports/存量MD文件盘点台账.md",
+    "content_type": "output_report",
+    "pass": true,
+    "detail": {
+      "path_check": {
+        "path_compliance": true,
+        "temp_tag_compliance": true,
+        "violation_details": [],
+        "suggestion": "合规校验通过"
+      },
+      "security_check": {},
+      "project_rules": {},
+      "total_pass": true
+    }
+  },
+  {
+    "timestamp": 1772283080.620464,
+    "file_path": "src/tools/code_security_scanner.py",
+    "content_type": "code_skill",
+    "pass": false,
+    "detail": {
+      "path_check": {
+        "path_compliance": false,
+        "temp_tag_compliance": true,
+        "violation_details": [
+          "存储路径不符合规则，code_skill类型内容应存储在以下路径前缀下: ./skills/"
+        ],
+        "suggestion": "合规校验不通过，请根据违规详情修正后再执行操作"
+      },
+      "security_check": {
+        "read_error": "[Errno 2] No such file or directory: 'src/tools/code_security_scanner.py'"
+      },
+      "project_rules": {},
+      "total_pass": false
+    }
   }
 ]

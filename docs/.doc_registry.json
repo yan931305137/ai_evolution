@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "documents": {
+    "doc_d1bc309c": {
+      "doc_id": "doc_d1bc309c",
+      "path": "./reports/tools_development_priority_list.md",
+      "title": "工具开发优先级清单",
+      "task_id": "task_6fb92984",
+      "created_at": "2026-02-28T20:51:20.621993",
+      "ttl_days": -1,
+      "status": "active",
+      "doc_type": "decision",
+      "related_files": [],
+      "auto_delete": false,
+      "last_verified_at": "2026-02-28T20:51:20.621995"
+    }
+  }
+}
