@@ -374,6 +374,103 @@ class HumanLevelBrain(BrainOrchestrator):
         
         return {**basic, **human_extensions}
 
+    # ==================== 规划系统集成 ====================
+    
+    def enable_planning(self):
+        """启用规划能力"""
+        from src.brain.planning_system import BrainPlanner
+        self.planner = BrainPlanner(brain_reference=self)
+        print("🎯 规划能力已启用")
+        return self
+    
+    def plan_task(self, goal: str, **kwargs):
+        """
+        制定任务计划
+        
+        Args:
+            goal: 目标描述
+            **kwargs: 额外参数
+            
+        Returns:
+            Plan对象
+        """
+        if not hasattr(self, 'planner') or self.planner is None:
+            self.enable_planning()
+        return self.planner.plan(goal, **kwargs)
+    
+    def execute_plan_step(self, plan_id: str = None):
+        """
+        执行计划步骤
+        
+        Args:
+            plan_id: 计划ID，默认当前计划
+            
+        Returns:
+            (子任务, 执行结果)
+        """
+        if not hasattr(self, 'planner') or self.planner is None:
+            return None, {"error": "Planner not enabled"}
+        return self.planner.execute_next_step(plan_id)
+    
+    def get_plan_progress(self, plan_id: str = None) -> Dict:
+        """
+        获取计划进度
+        
+        Args:
+            plan_id: 计划ID，默认当前计划
+            
+        Returns:
+            计划状态字典
+        """
+        if not hasattr(self, 'planner') or self.planner is None:
+            return {"error": "Planner not enabled"}
+        return self.planner.get_plan_status(plan_id)
+    
+    def adjust_plan(self, plan_id: str, adjustment: Dict) -> bool:
+        """
+        调整计划
+        
+        Args:
+            plan_id: 计划ID
+            adjustment: 调整指令
+            
+        Returns:
+            是否成功
+        """
+        if not hasattr(self, 'planner') or self.planner is None:
+            return False
+        return self.planner.adjust_plan(plan_id, adjustment)
+    
+    # ==================== 监控系统集成 ====================
+    
+    def enable_monitoring(self, auto_start: bool = True):
+        """
+        启用监控
+        
+        Args:
+            auto_start: 是否自动开始监控
+        """
+        from src.brain.monitoring_system import create_monitor
+        self.monitor = create_monitor(self, auto_start=auto_start)
+        return self
+    
+    def get_monitoring_stats(self) -> Dict:
+        """获取监控统计"""
+        if not hasattr(self, 'monitor') or self.monitor is None:
+            return {"error": "Monitoring not enabled"}
+        return self.monitor.get_metrics_summary()
+    
+    def get_health_status(self) -> Dict:
+        """获取健康状态"""
+        if not hasattr(self, 'monitor') or self.monitor is None:
+            return {"error": "Monitoring not enabled"}
+        return self.monitor.get_health_status()
+    
+    def record_response_time(self, duration_ms: float):
+        """记录响应时间"""
+        if hasattr(self, 'monitor') and self.monitor:
+            self.monitor.record_response_time(duration_ms)
+
 
 # 演示
 async def demo_human_brain():

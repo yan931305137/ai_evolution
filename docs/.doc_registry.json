@@ -189,6 +189,95 @@
       "related_files": [],
       "auto_delete": false,
       "last_verified_at": "2026-02-28T23:03:41.352664"
+    },
+    "doc_d2956a97": {
+      "doc_id": "doc_d2956a97",
+      "path": "./docs/能力映射清单.md",
+      "title": "完整能力映射清单",
+      "task_id": "task_798d0d54",
+      "created_at": "2026-03-01T00:24:36.369729",
+      "ttl_days": 30,
+      "status": "active",
+      "doc_type": "standard",
+      "related_files": [
+        {
+          "path": "src/brain/human_cognition.py",
+          "hash": "35909544"
+        },
+        {
+          "path": "src/brain/memory_system/persistent_memory.py",
+          "hash": "77d266d2"
+        },
+        {
+          "path": "src/brain/orchestrator.py",
+          "hash": "512640fb"
+        },
+        {
+          "path": "src/brain/learning_system.py",
+          "hash": "c8fede59"
+        },
+        {
+          "path": "src/utils/multimodal_perception.py",
+          "hash": "1e93b3ce"
+        }
+      ],
+      "auto_delete": false,
+      "last_verified_at": "2026-03-01T00:24:36.369736"
+    },
+    "doc_25aa98b9": {
+      "doc_id": "doc_25aa98b9",
+      "path": "./docs/自我对话全链路流程图.md",
+      "title": "自我对话全链路流程图",
+      "task_id": "task_37664799",
+      "created_at": "2026-03-01T00:24:53.086896",
+      "ttl_days": 30,
+      "status": "active",
+      "doc_type": "standard",
+      "related_files": [
+        {
+          "path": "src/brain/human_cognition.py",
+          "hash": "35909544"
+        },
+        {
+          "path": "src/brain/memory_system/persistent_memory.py",
+          "hash": "77d266d2"
+        },
+        {
+          "path": "src/core/answer_transparency_manager.py",
+          "hash": "ba9b4e73"
+        },
+        {
+          "path": "src/brain/value_system/__init__.py",
+          "hash": "962428c0"
+        },
+        {
+          "path": "src/brain/decision_system/__init__.py",
+          "hash": "b006ec83"
+        },
+        {
+          "path": "src/brain/perception_system/__init__.py",
+          "hash": "99fe493b"
+        },
+        {
+          "path": "src/brain/learning_system.py",
+          "hash": "c8fede59"
+        }
+      ],
+      "auto_delete": false,
+      "last_verified_at": "2026-03-01T00:24:53.086903"
+    },
+    "doc_d6936ee5": {
+      "doc_id": "doc_d6936ee5",
+      "path": "docs/security_test_framework_design.md",
+      "title": "自我优化安全管控与测试框架设计文档",
+      "task_id": "task_96bd4871",
+      "created_at": "2026-03-01T00:29:06.405018",
+      "ttl_days": 14,
+      "status": "active",
+      "doc_type": "design",
+      "related_files": [],
+      "auto_delete": true,
+      "last_verified_at": "2026-03-01T00:29:06.405022"
     }
   }
 }
