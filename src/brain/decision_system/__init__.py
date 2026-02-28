@@ -109,8 +109,10 @@ class DecisionSystem(BrainModule):
         Returns:
             DecisionOutput: 决策结果
         """
-        # 更新工作记忆
-        self.working_memory.update(context)
+        # 更新工作记忆（只选择可序列化的简单字段）
+        simple_context = {k: v for k, v in context.items() 
+                         if isinstance(v, (str, int, float, bool))}
+        self.working_memory.update(simple_context)
         self.current_goal = context.get("goal")
         
         # 生成或解析选项
@@ -358,10 +360,17 @@ class DecisionSystem(BrainModule):
     
     def process(self, input_data: Any, context: Optional[Dict] = None) -> Dict:
         """统一处理接口"""
-        operation = context.get("operation", "decide") if context else "decide"
+        context = context or {}
+        operation = context.get("operation", "decide")
         
         if operation == "decide":
-            decision = self.generate_decision(input_data, context.get("options"))
+            # 构建决策上下文，input_data作为situation
+            decision_context = {
+                "situation": str(input_data),
+                "goal": context.get("goal", "process"),
+                **{k: v for k, v in context.items() if k not in ["operation", "goal"]}
+            }
+            decision = self.generate_decision(decision_context, context.get("options"))
             return {
                 "action": decision.action,
                 "confidence": decision.confidence,

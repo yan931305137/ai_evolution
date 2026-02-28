@@ -23,9 +23,11 @@ import time
 from src.brain.common import BrainState, BrainModule
 from src.brain.perception_system import PerceptionSystem, ModalityType
 from src.brain.attention_system import AttentionSystem, Stimulus
-from src.brain.memory_system import MemorySystem, MemoryEntry, MemoryType
+from src.brain.memory_system import MemorySystem, MemoryEntry
+from src.brain.common import MemoryType
 from src.brain.decision_system import DecisionSystem, Option
 from src.brain.value_system import ValueSystem, ValueAssessment
+from src.brain.learning_system import KnowledgeLearningSystem, LearningTask, KnowledgeGap
 
 
 class ProcessingMode(Enum):
@@ -84,8 +86,27 @@ class BrainOrchestrator:
         # 循环计数器 (用于定期清理)
         self.cycle_count = 0
         
+        # 知识学习系统 (闲时LLM学习)
+        self.learning = KnowledgeLearningSystem(
+            memory_system=self.memory,
+            llm_client=None,  # 需外部设置
+            confidence_threshold=0.5
+        )
+        
         # 是否启用调试日志
         self.debug = False
+        
+    def set_llm_client(self, llm_client: Callable[[str], str]):
+        """设置LLM客户端（用于后台学习）"""
+        self.learning.llm_client = llm_client
+        
+    def start_background_learning(self):
+        """启动后台学习"""
+        self.learning.start_background_learning()
+        
+    def stop_background_learning(self):
+        """停止后台学习"""
+        self.learning.stop_background_learning()
         
     async def process(self, input_data: Any, 
                      context: Optional[Dict] = None) -> BrainResponse:
@@ -105,6 +126,9 @@ class BrainOrchestrator:
         start_time = time.time()
         context = context or {}
         systems_involved = []
+        
+        # 更新活动时间（用于后台学习判断闲置）
+        self.learning.update_activity()
         
         if self.debug:
             print(f"[Brain] Processing input: {str(input_data)[:50]}...")
@@ -142,15 +166,46 @@ class BrainOrchestrator:
         
         # 3. 记忆检索 (相关经验)
         memory_query = str(input_data)[:100]
-        relevant_memories = self.memory.search(
+        relevant_memories = self.memory.retrieve(
             query=memory_query,
-            k=3,
-            include_emotional=True
+            top_k=3
         )
+        # retrieve返回的是 [(id, score), ...]，需要转换为MemoryEntry
+        memory_entries = []
+        for mem_id, score in relevant_memories:
+            if mem_id in self.memory.long_term_memory:
+                entry = self.memory.long_term_memory[mem_id]
+                entry.relevance_score = score  # 添加相关性分数
+                memory_entries.append(entry)
+        relevant_memories = memory_entries
         systems_involved.append("memory")
         
         if self.debug and relevant_memories:
             print(f"[Brain] Memory: retrieved {len(relevant_memories)} entries")
+        
+        # 3.5 检测知识缺口，安排后台学习
+        knowledge_gap = self.learning.detect_knowledge_gap(
+            query=memory_query,
+            retrieved_memories=relevant_memories,
+            perception_confidence=perception_result.get("confidence", 0.5)
+        )
+        
+        if knowledge_gap:
+            if self.debug:
+                print(f"[Brain] Knowledge gap detected: {knowledge_gap.topic}")
+            
+            # 加入学习队列（闲时处理）
+            enqueued = self.learning.enqueue_learning(
+                gap=knowledge_gap,
+                context={
+                    "conversation_id": context.get("conversation_id"),
+                    "original_input": str(input_data)[:200]
+                },
+                priority=3 if knowledge_gap.confidence < 0.3 else 5  # 低置信度优先
+            )
+            
+            if enqueued and self.debug:
+                print(f"[Brain] Learning task enqueued for: {knowledge_gap.query[:50]}")
         
         # 4. 价值评估
         value_context = {
@@ -194,16 +249,16 @@ class BrainOrchestrator:
             print(f"[Brain] Decision: action={action}, confidence={confidence:.2f}")
         
         # 6. 保存到记忆
-        self.memory.store(MemoryEntry(
+        self.memory.encode(
             content={
                 "input": str(input_data)[:200],
                 "action": action,
                 "context": context
             },
-            memory_type=MemoryType.WORKING,  # 先存为工作记忆
+            memory_type=MemoryType.WORKING.value,
             importance=motivation * 0.8,
-            emotional_valence=value_result.get("value", 0.0)
-        ))
+            emotional_tag={"valence": value_result.get("value", 0.0)}
+        )
         
         # 7. 周期性维护
         self.cycle_count += 1
@@ -228,7 +283,13 @@ class BrainOrchestrator:
             metadata={
                 "cycle": self.cycle_count,
                 "modality": modality,
-                "motivation": motivation
+                "motivation": motivation,
+                "knowledge_gap": {
+                    "detected": knowledge_gap is not None,
+                    "topic": knowledge_gap.topic if knowledge_gap else None,
+                    "confidence": knowledge_gap.confidence if knowledge_gap else 1.0
+                },
+                "learning_queue_size": self.learning.learning_queue.qsize()
             }
         )
         
@@ -280,8 +341,9 @@ class BrainOrchestrator:
             "dopamine_level": self.value.get_dopamine_level(),
             "motivation": self.value.get_motivation_state(),
             "current_attention": self.attention.get_attention_summary(),
-            "working_memory_size": len(self.memory.working_memory),
-            "long_term_memory_size": self.memory.long_term_memory.get("stats", {}).get("count", 0)
+            "short_term_memory_size": len(self.memory.short_term_memory),
+            "long_term_memory_size": len(self.memory.long_term_memory),
+            "learning_system": self.learning.get_learning_status()
         }
     
     def reset(self):
@@ -293,6 +355,16 @@ class BrainOrchestrator:
         for system in self.systems.values():
             if hasattr(system, 'reset'):
                 system.reset()
+        
+        # 重置学习系统
+        self.learning.learned_count = 0
+        self.learning.failed_count = 0
+        self.learning.pending_queries.clear()
+        while not self.learning.learning_queue.empty():
+            try:
+                self.learning.learning_queue.get_nowait()
+            except:
+                break
                 
         if self.debug:
             print("[Brain] State reset")

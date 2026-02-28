@@ -26,8 +26,17 @@ class BrainRegion(Enum):
     PARIETAL_CORTEX = "parietal"      # 顶叶 - 注意力
     OCCIPITAL_CORTEX = "occipital"    # 枕叶 - 视觉感知
     TEMPORAL_CORTEX = "temporal"      # 颞叶 - 听觉/语言
+    OCCIPITAL_TEMPORAL = "occipital_temporal"  # 枕颞联合区 - 多模态感知
     AMYGDALA = "amygdala"             # 杏仁核 - 情感
     NUCLEUS_ACCUMBENS = "nucleus_accumbens"  # 伏隔核 - 奖励
+
+
+class MemoryType(Enum):
+    """记忆类型"""
+    WORKING = "working"      # 工作记忆（短期）
+    EPISODIC = "episodic"    # 情景记忆
+    SEMANTIC = "semantic"    # 语义记忆
+    PROCEDURAL = "procedural"  # 程序性记忆
 
 
 @dataclass
@@ -44,7 +53,9 @@ class BrainState:
 class PerceptionInput:
     """感知输入数据"""
     modality: str  # text, image, audio, video
-    raw_data: Any
+    content: Any = None
+    raw_data: Any = None
+    confidence: float = 1.0
     timestamp: datetime = field(default_factory=datetime.now)
     metadata: Dict = field(default_factory=dict)
 
@@ -69,6 +80,9 @@ class MemoryEntry:
     timestamp: datetime = field(default_factory=datetime.now)
     access_count: int = 0
     associations: List[str] = field(default_factory=list)
+    relevance_score: float = 0.0  # 检索时的相关性分数
+    tags: List[str] = field(default_factory=list)  # 标签列表
+    emotional_valence: float = 0.0  # 情感效价
 
 
 class BrainModule(ABC):

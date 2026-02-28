@@ -154,6 +154,28 @@
       "related_files": [],
       "auto_delete": true,
       "last_verified_at": "2026-02-28T22:39:11.012504"
+    },
+    "doc_02e52479": {
+      "doc_id": "doc_02e52479",
+      "path": "docs/P0优先级工具调用文档.md",
+      "title": "P0优先级工具调用文档",
+      "task_id": "task_a8737435",
+      "created_at": "2026-02-28T22:50:39.613252",
+      "ttl_days": 30,
+      "status": "active",
+      "doc_type": "standard",
+      "related_files": [
+        {
+          "path": "skills/business_skills.py",
+          "hash": "a2e3d66a"
+        },
+        {
+          "path": "tests/test_business_p0_skills.py",
+          "hash": "7e000383"
+        }
+      ],
+      "auto_delete": false,
+      "last_verified_at": "2026-02-28T22:50:57.765767"
     }
   }
 }
