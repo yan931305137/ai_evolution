@@ -295,6 +295,53 @@ class LLMClient:
             # 返回兜底响应
             return self._get_fallback_response(messages)
     
+    async def agenerate(self, messages: List[Dict[str, str]], stream: bool = False, temperature: float = 0.7) -> any:
+        """
+        异步生成文本
+        
+        Args:
+            messages: 消息列表
+            stream: 是否流式输出
+            temperature: 温度参数
+            
+        Returns:
+            响应对象 或 异步生成器
+        """
+        # Brain模式：使用人类级大脑
+        if self.provider == "brain":
+            return await self._brain_client.agenerate(messages, stream=stream, temperature=temperature)
+        
+        # Hybrid模式：Brain + LLM
+        if self.provider == "hybrid":
+            return await self._hybrid_client.agenerate(messages, stream=stream, temperature=temperature)
+        
+        try:
+            # 转换消息格式
+            langchain_messages = self._convert_messages_to_langchain(messages)
+            
+            # 调用 LangChain 异步 API
+            if stream:
+                # 流式生成
+                async def async_stream_generator():
+                    async for chunk in self.client.astream(langchain_messages, temperature=temperature):
+                        if hasattr(chunk, 'content') and chunk.content:
+                            yield chunk.content
+                return async_stream_generator()
+            else:
+                # 非流式生成
+                response = await self.client.ainvoke(langchain_messages, temperature=temperature)
+                
+                # 保存交互样本 (异步环境下暂不阻塞保存，或者可以使用 run_in_executor)
+                if response and hasattr(response, 'content'):
+                    # 简单的同步保存，量大时可优化
+                    self._save_interaction_sample(messages, response.content)
+                
+                return response
+                
+        except Exception as e:
+            logging.error(f"Async API 调用失败: {e}")
+            return self._get_fallback_response(messages)
+
     def _get_fallback_response(self, messages: List[Dict[str, str]]) -> any:
         """获取兜底响应"""
         # 检测是否需要JSON
@@ -312,6 +359,28 @@ class LLMClient:
         
         return FallbackResponse(fallback_text)
     
+    async def achat(self, prompt: str, temperature: float = 0.7) -> str:
+        """
+        异步聊天接口 (兼容 Brain 系统)
+        
+        Args:
+            prompt: 提示词
+            temperature: 温度
+            
+        Returns:
+            响应文本
+        """
+        try:
+            messages = [{"role": "user", "content": prompt}]
+            response = await self.agenerate(messages, stream=False, temperature=temperature)
+            
+            if hasattr(response, 'content'):
+                return response.content
+            return str(response)
+        except Exception as e:
+            logging.error(f"Async chat failed: {e}")
+            return "Error: " + str(e)
+
     def stream_generate(self, messages: List[Dict[str, str]], temperature: float = 0.7) -> Generator[str, None, None]:
         """
         流式生成文本
@@ -344,4 +413,38 @@ class LLMClient:
                     
         except Exception as e:
             logging.error(f"Coze 流式生成失败: {e}")
+            yield f"\n[Error: {str(e)}]"
+
+    async def astream_generate(self, messages: List[Dict[str, str]], temperature: float = 0.7):
+        """
+        异步流式生成文本
+        
+        Args:
+            messages: 消息列表
+            temperature: 温度参数
+            
+        Yields:
+            文本片段
+        """
+        if self.provider == "brain":
+            async for chunk in self._brain_client.astream_generate(messages, temperature=temperature):
+                yield chunk
+            return
+
+        if self.provider == "hybrid":
+            async for chunk in self._hybrid_client.astream_generate(messages, temperature=temperature):
+                yield chunk
+            return
+
+        try:
+            # 转换消息格式
+            langchain_messages = self._convert_messages_to_langchain(messages)
+            
+            # 流式生成
+            async for chunk in self.client.astream(langchain_messages, temperature=temperature):
+                if hasattr(chunk, 'content') and chunk.content:
+                    yield chunk.content
+                    
+        except Exception as e:
+            logging.error(f"Async stream failed: {e}")
             yield f"\n[Error: {str(e)}]"

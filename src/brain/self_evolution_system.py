@@ -16,6 +16,9 @@ from datetime import datetime, timedelta
 from enum import Enum
 from collections import defaultdict
 import asyncio
+from src.utils.logger import setup_logger
+
+logger = setup_logger(name="SelfEvolution")
 
 
 class ImprovementType(Enum):
@@ -454,7 +457,7 @@ class SelfEvolutionEngine:
             return True
             
         except Exception as e:
-            print(f"部署改进失败: {e}")
+            logger.error(f"部署改进失败: {e}")
             return False
     
     def _deploy_strategy_improvement(self, proposal: ImprovementProposal):
@@ -531,12 +534,12 @@ class SelfEvolutionEngine:
             self.learning_rate = params.get("learning_rate", 0.1)
             self.exploration_rate = params.get("exploration_rate", 0.2)
             
-            print(f"✅ 进化状态已加载：{len(self.experience_buffer)}条经验")
+            logger.info(f"✅ 进化状态已加载：{len(self.experience_buffer)}条经验")
             
         except FileNotFoundError:
-            print("⚠️ 进化状态文件不存在，从空状态开始")
+            logger.info("⚠️ 进化状态文件不存在，从空状态开始")
         except Exception as e:
-            print(f"❌ 加载进化状态失败：{e}")
+            logger.error(f"❌ 加载进化状态失败：{e}")
 
 
 class MetaLearningSystem:

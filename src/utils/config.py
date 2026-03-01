@@ -218,3 +218,7 @@ class Config:
 
 # Global instance
 cfg = Config()
+
+# Register with Container
+from src.core.container import container
+container.register(Config, lambda: cfg)

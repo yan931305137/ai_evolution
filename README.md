@@ -5,10 +5,9 @@
 **自主进化型个人 AI 助手框架**
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg?style=flat-square&logo=python)](https://www.python.org/downloads/)
-[![Node.js 20+](https://img.shields.io/badge/node.js-20+-green.svg?style=flat-square&logo=node.js)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
-[![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blue.svg?style=flat-square&logo=github-actions)](.github/workflows/ci-cd-pipeline.yml)
-[![Security](https://img.shields.io/badge/security-scan%20passed-brightgreen.svg?style=flat-square&logo=shield)](docs/GITHUB_CICD_SECURITY.md)
+[![Evolution: Autonomous](https://img.shields.io/badge/evolution-autonomous-brightgreen.svg?style=flat-square)](docs/BRAIN_ENHANCEMENTS_REPORT.md)
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blue.svg?style=flat-square&logo=github-actions)](.github/workflows/ci.yml)
 
 [English](README_EN.md) | [中文文档](README.md) | [Documentation](docs/)
 
@@ -25,7 +24,6 @@
 - [安装指南](#-安装指南)
 - [配置说明](#-配置说明)
 - [使用指南](#-使用指南)
-- [API 文档](#-api-文档)
 - [开发指南](#-开发指南)
 - [CI/CD 集成](#-cicd-集成)
 - [安全策略](#-安全策略)
@@ -53,103 +51,74 @@
 ## ✨ 核心特性
 
 ### 🧠 人类级认知架构
-- **感知层**: 多模态输入处理（文本、图像、语音）
-- **认知层**: 意图识别、上下文理解、推理规划
-- **记忆层**: 向量记忆、知识图谱、经验存储
-- **表达层**: 自然语言生成、情感表达
+- **感知层 (Perception)**: 多模态输入预处理。
+- **注意力系统 (Attention)**: 动态资源调度，聚焦关键任务上下文。
+- **记忆层 (Memory)**: 包含瞬时、短期与长期记忆，支持向量检索与遗忘机制。
+- **价值系统 (Value)**: 基于收益/损失评估决策优先级。
+- **决策系统 (Decision)**: 基于记忆与价值进行逻辑推理与路径规划。
 
-### 🔄 自主进化系统
-- **创造**: 基于需求产生新想法
-- **评估**: 多维度评估想法价值
-- **应用**: 自动实现优质想法
-- **进化**: 根据反馈调整策略
+### 🔄 自主进化闭环 (Self-Evolution System)
+- **数据采集**: 自动收集运行时运营数据。
+- **缺口识别**: 识别能力短板与性能瓶颈。
+- **自动迭代**: 生成迭代计划、编写代码、运行测试并自动应用。
+- **热重载**: 无需重启，实时更新核心模块。
 
-### 🛡️ 企业级安全
-- 敏感信息自动扫描
-- CI/CD 安全检查集成
-- 预提交钩子保护
-- 日志自动脱敏
-
-### 🔌 丰富集成
-- **IM 渠道**: 飞书、钉钉、微信、Telegram
-- **开发工具**: GitHub、GitLab、Jira
-- **云服务**: AWS、阿里云、腾讯云
-- **数据库**: ChromaDB、PostgreSQL、MongoDB
+### 🛡️ 企业级安全与合规
+- **存储合规**: 自动校验文件写入路径，确保代码、文档、数据分类存放。
+- **代码扫描**: 迭代过程中自动进行安全性验证。
+- **透明度监控**: 追踪每一个回答的信息来源与事实核查步骤。
 
 ---
 
-## 🏗️ 系统架构
+## 🏗️ 项目结构
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        OpenClaw 系统架构                         │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐       │
-│  │   Channels   │    │   Gateway    │    │    Agent     │       │
-│  │  (飞书/钉钉)  │◄──►│    (5000)    │◄──►│   (Pi/π)     │       │
-│  └──────────────┘    └──────────────┘    └──────────────┘       │
-│                               │                                  │
-│                    ┌──────────┴──────────┐                      │
-│                    ▼                     ▼                      │
-│           ┌──────────────┐      ┌──────────────┐               │
-│           │   Skills     │      │    Brain     │               │
-│           │  (工具扩展)   │      │  (人类级大脑) │               │
-│           └──────────────┘      └──────────────┘               │
-│                                          │                      │
-│                    ┌─────────────────────┼─────────────────┐   │
-│                    ▼                     ▼                 ▼   │
-│           ┌──────────────┐    ┌──────────────┐  ┌──────────┐  │
-│           │   Memory     │    │  Evolution   │  │  Emotion │  │
-│           │  (记忆系统)   │    │  (进化系统)   │  │ (情感系统)│  │
-│           └──────────────┘    └──────────────┘  └──────────┘  │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+```text
+openclaw/
+├── src/
+│   ├── agents/              # AI 代理实现 (动态代理, 专家代理)
+│   ├── brain/               # 人类级大脑 (感知, 记忆, 决策, 价值系统)
+│   ├── core/                # 核心组件
+│   ├── skills/              # 技能系统
+│   ├── storage/             # 存储层 (数据库, 增强记忆)
+│   ├── tools/               # 工具集 (计算机操作, 文件, Git, Web等)
+│   └── utils/               # 基础设施 (热重载, 安全扫描, LLM适配)
+├── tests/                   # 测试代码
+├── config/                  # 配置文件
+├── docs/                    # 深度文档
+└── scripts/                 # 脚本工具
 ```
 
 ---
 
 ## 🚀 快速开始
 
-### 使用 Docker（推荐）
+### 1. 环境准备
+确保已安装 Python 3.12+。
 
 ```bash
-# 克隆仓库
-git clone https://github.com/yourusername/openclaw.git
-cd openclaw
-
-# 启动服务
-docker-compose up -d
-
-# 查看日志
-docker-compose logs -f gateway
-```
-
-### 本地安装
-
-```bash
-# 克隆仓库
-git clone https://github.com/yourusername/openclaw.git
-cd openclaw
+# 克隆项目
+git clone <repository-url>
+cd ai
 
 # 安装依赖
 make install
-
-# 或手动安装
-pip install -r requirements.txt
 ```
 
-### 一键启动
+### 2. 配置
+复制 `.env.example` 为 `.env` 并配置你的 API Key（推荐使用豆包/Volengine）。
 
 ```bash
-# 启动所有服务
-make up
+cp .env.example .env
+# 编辑 .env 文件填入 API 密钥
+```
 
-# 启动 Gateway
-make gateway
+### 3. 启动
 
-# 启动 Agent
-make agent
+```bash
+# 启动交互式 CLI
+make run
+# 或者
+python -m src.cli
 ```
 
 ---
@@ -161,62 +130,22 @@ make agent
 | 组件 | 最低要求 | 推荐配置 |
 |------|----------|----------|
 | Python | 3.12+ | 3.12+ |
-| Node.js | 20.x | 22.x |
 | RAM | 4GB | 8GB+ |
 | Disk | 10GB | 50GB+ |
-| GPU | 可选 | 推荐用于大模型 |
 
-### 环境准备
-
-```bash
-# 安装 Python 3.12
-# macOS
-brew install python@3.12
-
-# Ubuntu
-sudo apt install python3.12 python3.12-venv
-
-# 安装 Node.js 20
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
-```
-
-### 完整安装
+### Docker 安装
 
 ```bash
-# 1. 克隆仓库
-git clone https://github.com/yourusername/openclaw.git
-cd openclaw
+# 构建镜像
+make docker-build
 
-# 2. 创建虚拟环境
-python3.12 -m venv venv
-source venv/bin/activate  # Linux/Mac
-# 或: venv\Scripts\activate  # Windows
-
-# 3. 安装依赖
-pip install --upgrade pip
-pip install -r requirements.txt
-
-# 4. 安装 Git hooks（推荐）
-./scripts/install-hooks.sh
-
-# 5. 验证安装
-make doctor
+# 运行容器
+make docker-run
 ```
 
 ---
 
 ## ⚙️ 配置说明
-
-### 快速配置
-
-```bash
-# 复制示例配置
-cp .env.example .env
-
-# 编辑配置文件
-vim .env
-```
 
 ### 核心配置项
 
@@ -229,31 +158,14 @@ vim .env
 
 ### 配置文件结构
 
-```
+```text
 config/
 ├── config.yaml              # 主配置
 ├── config.example.yaml      # 示例配置
-├── evolution.yaml           # 进化系统配置
+├── evolution_goals.yaml     # 进化目标
 ├── github_cicd.yaml         # CI/CD 配置
 ├── compliance_rules.json    # 合规规则
 └── security_rules.json      # 安全规则
-```
-
-### 渠道配置示例
-
-```yaml
-# config/config.yaml
-channels:
-  feishu:
-    enabled: true
-    appId: "cli_xxxxxxxx"
-    appSecret: "xxxxxxxx"
-    encryptKey: "xxxxxxxx"
-  
-  dingtalk:
-    enabled: true
-    clientId: "dingxxxxxxxx"
-    clientSecret: "xxxxxxxx"
 ```
 
 ---
@@ -262,139 +174,34 @@ channels:
 
 ### 命令行交互
 
-```bash
-# 启动交互式 CLI
-python -m src.cli
-
-# 发送消息
-openclaw message send --to "user123" --message "Hello!"
-
-# 查看状态
-openclaw status --all
-```
-
-### API 调用
-
-```python
-import requests
-
-# Gateway 默认端口 5000
-response = requests.post("http://localhost:5000/api/v1/chat", json={
-    "message": "你好，OpenClaw！",
-    "session_id": "test_session"
-})
-
-print(response.json())
-```
-
-### WebSocket 实时通信
-
-```javascript
-const ws = new WebSocket('ws://localhost:5000/ws/chat');
-
-ws.onopen = () => {
-    ws.send(JSON.stringify({
-        type: 'message',
-        content: 'Hello!'
-    }));
-};
-
-ws.onmessage = (event) => {
-    console.log('Received:', event.data);
-};
-```
-
----
-
-## 🔌 API 文档
-
-### REST API
-
-| 端点 | 方法 | 描述 |
-|------|------|------|
-| `/api/v1/chat` | POST | 发送消息 |
-| `/api/v1/sessions` | GET | 获取会话列表 |
-| `/api/v1/agents` | GET | 获取 Agent 列表 |
-| `/api/v1/skills` | GET | 获取技能列表 |
-
-完整 API 文档: [docs/API.md](docs/API.md)
-
-### WebSocket 事件
-
-| 事件 | 方向 | 描述 |
-|------|------|------|
-| `message` | C→S | 发送消息 |
-| `response` | S→C | 接收回复 |
-| `typing` | S→C | 输入中状态 |
-| `error` | S→C | 错误通知 |
+在 CLI 界面中，你可以使用以下指令：
+- `/agent <任务描述>`: 启动自主代理模式执行复杂任务（如：分析代码并编写单元测试）。
+- `/evolve`: 开启 **自主进化闭环**，观察系统如何自我优化。
+- `/auto`: 切换自主运行模式。
+- `/reload`: 查看当前模块的热重载状态与性能统计。
+- `/status`: 查看大脑状态、需求水平及进化进度。
 
 ---
 
 ## 🛠️ 开发指南
 
-### 项目结构
-
-```
-openclaw/
-├── src/                      # 源代码
-│   ├── agents/              # AI 代理实现
-│   │   ├── base.py         # 基础 Agent
-│   │   └── pi_agent.py     # Pi Agent
-│   ├── brain/               # 人类级大脑
-│   │   ├── perception.py   # 感知层
-│   │   ├── cognition.py    # 认知层
-│   │   ├── memory.py       # 记忆层
-│   │   └── expression.py   # 表达层
-│   ├── channels/            # 渠道适配器
-│   │   ├── feishu.py       # 飞书
-│   │   └── dingtalk.py     # 钉钉
-│   ├── core/                # 核心组件
-│   ├── skills/              # 技能系统
-│   ├── storage/             # 存储层
-│   ├── tools/               # 工具集
-│   └── utils/               # 工具函数
-├── tests/                   # 测试代码
-├── config/                  # 配置文件
-├── docs/                    # 文档
-├── scripts/                 # 脚本工具
-└── data/                    # 数据文件
-```
-
-### 开发命令
+### 常用命令
 
 ```bash
 # 运行测试
 make test
 
-# 运行特定测试
-pytest tests/test_brain.py -v
+# 运行带覆盖率的测试
+make test-cov
 
 # 代码格式化
 make format
 
-# 类型检查
+# 代码检查
 make lint
 
-# 安全检查
-make security-scan
-
-# 构建文档
-make docs
-```
-
-### 创建自定义 Skill
-
-```python
-# skills/my_skill.py
-from src.skills.base import Skill
-
-class MySkill(Skill):
-    name = "my_skill"
-    description = "My custom skill"
-    
-    def run(self, **kwargs):
-        # 实现逻辑
-        return {"result": "success"}
+# 清理临时文件
+make clean
 ```
 
 ---
@@ -403,31 +210,10 @@ class MySkill(Skill):
 
 ### GitHub Actions 工作流
 
-```yaml
-# .github/workflows/ci-cd-pipeline.yml
-name: CI/CD Pipeline
-
-on:
-  push:
-    branches: [ main, dev ]
-  pull_request:
-    branches: [ main ]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run tests
-        run: make test
-      
-  security-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Security scan
-        run: make security-scan
-```
+项目配置了完整的 CI/CD 流程，位于 `.github/workflows/ci.yml`，包含：
+- 自动化测试
+- 安全扫描
+- 代码质量检查
 
 ### 进化系统集成
 
@@ -435,29 +221,16 @@ jobs:
 # 启用 CI/CD 自动触发
 openclaw config set evolution.cicd.enabled true
 openclaw config set evolution.cicd.auto_trigger true
-
-# 运行完整进化周期
-openclaw evolution run --full-cycle
 ```
 
 ---
 
 ## 🔒 安全策略
 
-### 安全特性
-
-- ✅ **预提交钩子**: 自动扫描暂存文件
+- ✅ **预提交钩子**: 自动扫描暂存文件 (`scripts/pre-commit-security.sh`)
 - ✅ **CI/CD 扫描**: GitHub Actions 安全检测
 - ✅ **日志脱敏**: 敏感信息自动清理
-- ✅ **依赖扫描**: Safety 和 pip-audit 集成
-
-### 报告安全问题
-
-如果你发现了安全漏洞，请通过以下方式报告：
-
-1. **不要**在公共 Issue 中披露
-2. 发送邮件至: security@openclaw.ai
-3. 或创建私人安全公告
+- ✅ **依赖扫描**: 确保依赖包安全
 
 详细安全文档: [docs/GITHUB_CICD_SECURITY.md](docs/GITHUB_CICD_SECURITY.md)
 
@@ -467,86 +240,20 @@ openclaw evolution run --full-cycle
 
 我们欢迎各种形式的贡献！
 
-### 贡献流程
-
 1. **Fork** 仓库
 2. **创建分支**: `git checkout -b feature/amazing-feature`
 3. **提交更改**: `git commit -m 'Add amazing feature'`
 4. **推送分支**: `git push origin feature/amazing-feature`
 5. **创建 Pull Request**
 
-### 开发规范
-
-- 遵循 [PEP 8](https://pep8.org/) 代码规范
-- 使用 [Black](https://black.readthedocs.io/) 格式化代码
-- 添加单元测试覆盖新功能
-- 更新相关文档
-
-### 行为准则
-
-请阅读 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) 了解我们的行为准则。
-
----
-
-## 📊 项目状态
-
-### 健康度指标
-
-![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
-![Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen)
-![Security](https://img.shields.io/badge/security-audit%20passed-brightgreen)
-
-### 路线图
-
-- [x] 人类级大脑架构 v1.0
-- [x] 自主进化系统 v1.0
-- [x] CI/CD 集成 v1.0
-- [x] 安全扫描系统 v1.0
-- [ ] 多模态感知 v2.0 (进行中)
-- [ ] 分布式 Agent 系统 v2.0 (计划中)
-- [ ] 可视化控制台 v2.0 (计划中)
-
----
-
-## 🙏 致谢
-
-感谢以下项目和社区的支持：
-
-- [LangGraph](https://langchain-ai.github.io/langgraph/) - Agent 工作流框架
-- [ChromaDB](https://www.trychroma.com/) - 向量数据库
-- [FastAPI](https://fastapi.tiangolo.com/) - Web 框架
-- [React](https://react.dev/) - UI 框架
-
 ---
 
 ## 📄 许可证
 
-本项目采用 [MIT](LICENSE) 许可证。
-
-```
-MIT License
-
-Copyright (c) 2024 OpenClaw Contributors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-```
+本项目采用 [MIT License](LICENSE) 许可证。
 
 ---
 
 <div align="center">
-
-**⭐ Star 我们，如果你认为这个项目有帮助！**
-
-[Report Bug](https://github.com/yourusername/openclaw/issues) · 
-[Request Feature](https://github.com/yourusername/openclaw/issues) · 
-[Discussions](https://github.com/yourusername/openclaw/discussions)
-
+  <b>探索 AI 的终极形态 —— 从对话到进化。</b>
 </div>

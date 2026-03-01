@@ -11,6 +11,9 @@ import asyncio
 from typing import Any, Dict, List, Optional
 from datetime import datetime
 import json
+from src.utils.logger import setup_logger
+
+logger = setup_logger(name="HumanLevelBrain")
 
 from src.utils.llm import LLMClient
 from src.brain.orchestrator import BrainOrchestrator, BrainResponse
@@ -89,7 +92,7 @@ class HumanLevelBrain(BrainOrchestrator):
             else:
                 effective_provider = global_provider
         except Exception as e:
-            print(f"⚠️ 无法自动检测 Provider，回退到 coze: {e}")
+            logger.warning(f"⚠️ 无法自动检测 Provider，回退到 coze: {e}")
             effective_provider = "coze"
 
         self.llm_client = LLMClient(provider=effective_provider)
@@ -129,7 +132,7 @@ class HumanLevelBrain(BrainOrchestrator):
                 persist_directory=memory_storage_path
             )
             self.systems["memory"] = self.memory
-            print(f"🧠 持久化记忆已启用 | 路径: {memory_storage_path}")
+            logger.info(f"🧠 持久化记忆已启用 | 路径: {memory_storage_path}")
         
         # 身体状态（必须连接外部传感器/执行器）
         self.body = BodyState()
@@ -400,9 +403,9 @@ class HumanLevelBrain(BrainOrchestrator):
         """手动触发所有记忆的持久化"""
         if self.use_persistent_memory and hasattr(self.memory, 'persist_all'):
             self.memory.persist_all()
-            print("💾 所有记忆已持久化保存")
+            logger.info("💾 所有记忆已持久化保存")
         else:
-            print("⚠️ 持久化记忆未启用")
+            logger.warning("⚠️ 持久化记忆未启用")
     
     def recall_memories(self, query: str, top_k: int = 5) -> List[Dict]:
         """
@@ -506,7 +509,7 @@ class HumanLevelBrain(BrainOrchestrator):
         """启用规划能力"""
         from src.brain.planning_system import BrainPlanner
         self.planner = BrainPlanner(brain_reference=self)
-        print("🎯 规划能力已启用")
+        logger.info("🎯 规划能力已启用")
         return self
     
     def plan_task(self, goal: str, **kwargs):

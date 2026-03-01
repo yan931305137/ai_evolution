@@ -533,6 +533,57 @@ class BrainLLMClient:
                 content="抱歉，我当前状态不太好，请稍后再试。",
                 reasoning_content=f"错误: {str(e)}"
             )
+
+    async def agenerate(
+        self, 
+        messages: List[Dict[str, str]], 
+        stream: bool = False,
+        temperature: float = 0.7
+    ) -> Any:
+        """
+        异步生成响应
+        
+        Args:
+            messages: 消息列表
+            stream: 是否流式输出
+            temperature: 温度参数
+            
+        Returns:
+            BrainResponse对象 或 异步生成器
+        """
+        try:
+            # 转换输入格式
+            sensory_input = self._messages_to_stimulus(messages)
+            
+            # 运行Brain处理（直接异步调用）
+            result = await self.brain.experience(sensory_input)
+            
+            # 更新统计
+            self.interaction_count += 1
+            self.developmental_stage = result.get("developmental_stage", self.developmental_stage)
+            
+            # 转换输出格式
+            response = self._brain_result_to_response(result, messages)
+            
+            # 如果开启了流式模式，返回一个模拟的异步生成器
+            if stream:
+                async def async_stream_generator():
+                    # 将内容分块"流式"输出
+                    content = response.content
+                    chunk_size = max(1, len(content) // 5)
+                    for i in range(0, len(content), chunk_size):
+                        yield content[i:i + chunk_size]
+                        await asyncio.sleep(0.05) # 模拟网络延迟
+                return async_stream_generator()
+            
+            return response
+            
+        except Exception as e:
+            logging.error(f"Brain异步处理失败: {e}")
+            return BrainResponse(
+                content="抱歉，我当前状态不太好，请稍后再试。",
+                reasoning_content=f"错误: {str(e)}"
+            )
     
     def stream_generate(
         self, 
@@ -558,6 +609,30 @@ class BrainLLMClient:
         words = content.split()
         for word in words:
             yield word + " "
+
+    async def astream_generate(
+        self, 
+        messages: List[Dict[str, str]], 
+        temperature: float = 0.7
+    ):
+        """
+        异步流式生成（模拟）
+        
+        Args:
+            messages: 消息列表
+            temperature: 温度参数
+            
+        Yields:
+            文本片段
+        """
+        response = await self.agenerate(messages, stream=False, temperature=temperature)
+        content = response.content if hasattr(response, 'content') else str(response)
+        
+        # 模拟流式输出
+        words = content.split()
+        for word in words:
+            yield word + " "
+            await asyncio.sleep(0.02) # 模拟打字机效果
     
     def get_stats(self) -> Dict:
         """

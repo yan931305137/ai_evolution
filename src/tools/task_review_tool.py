@@ -260,4 +260,4 @@ def task_execution_review(start_time: Optional[str] = None,
 if __name__ == "__main__":
     # 示例运行
     report = task_execution_review()
-    print(json.dumps(report, ensure_ascii=False, indent=2))
+    logger.info(json.dumps(report, ensure_ascii=False, indent=2))

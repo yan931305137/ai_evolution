@@ -8,9 +8,13 @@
 import json
 import hashlib
 import numpy as np
+import logging
 from typing import Any, Dict, List, Optional, Tuple, Tuple
 from datetime import datetime
 from pathlib import Path
+from src.utils.logger import setup_logger
+
+logger = setup_logger(name="PersistentMemory")
 
 # 导入现有的记忆系统
 from src.brain.memory_system import MemorySystem, MemoryEntry
@@ -23,7 +27,7 @@ try:
     CHROMA_AVAILABLE = True
 except ImportError:
     CHROMA_AVAILABLE = False
-    print("⚠️  ChromaDB不可用，持久化记忆将使用JSON文件存储")
+    logger.warning("⚠️  ChromaDB不可用，持久化记忆将使用JSON文件存储")
 
 
 class PersistentMemorySystem(MemorySystem):
@@ -91,15 +95,15 @@ class PersistentMemorySystem(MemorySystem):
                     name=self.collection_name,
                     metadata={"description": "Brain's long-term memory storage"}
                 )
-                print(f"✅ 持久化记忆系统已初始化（ChromaDB）")
+                logger.info(f"✅ 持久化记忆系统已初始化（ChromaDB）")
                 return
             except Exception as e:
-                print(f"⚠️  ChromaDB初始化失败: {e}，将使用JSON存储")
+                logger.warning(f"⚠️  ChromaDB初始化失败: {e}，将使用JSON存储")
         
         # Fallback到JSON存储
         self.persist_directory.mkdir(parents=True, exist_ok=True)
-        print(f"✅ 持久化记忆系统已初始化（JSON文件）")
-        print(f"   存储路径: {self.json_storage_path}")
+        logger.info(f"✅ 持久化记忆系统已初始化（JSON文件）")
+        logger.info(f"   存储路径: {self.json_storage_path}")
     
     def _load_memories(self):
         """加载已有记忆（支持ChromaDB和JSON两种格式）"""
@@ -111,7 +115,7 @@ class PersistentMemorySystem(MemorySystem):
     def _load_from_json(self):
         """从JSON文件加载记忆"""
         if not self.json_storage_path.exists():
-            print("📭 没有历史记忆（JSON存储）")
+            logger.info("📭 没有历史记忆（JSON存储）")
             return
         
         try:
@@ -119,16 +123,16 @@ class PersistentMemorySystem(MemorySystem):
                 data = json.load(f)
             
             memories_data = data.get("memories", [])
-            print(f"📚 正在从JSON加载 {len(memories_data)} 条历史记忆...")
+            logger.info(f"📚 正在从JSON加载 {len(memories_data)} 条历史记忆...")
             
             for mem_data in memories_data:
                 memory_id, memory = self._dict_to_memory(mem_data)
                 self.long_term_memory[memory_id] = memory
             
-            print(f"✅ 已从JSON恢复 {len(memories_data)} 条记忆")
+            logger.info(f"✅ 已从JSON恢复 {len(memories_data)} 条记忆")
             
         except Exception as e:
-            print(f"⚠️  从JSON加载记忆失败: {e}")
+            logger.error(f"⚠️  从JSON加载记忆失败: {e}")
     
     def _get_embedding(self, text: str) -> List[float]:
         """
@@ -224,7 +228,7 @@ class PersistentMemorySystem(MemorySystem):
                 embeddings=[doc["embedding"]]
             )
         except Exception as e:
-            print(f"⚠️  保存记忆到ChromaDB失败: {e}")
+            logger.error(f"⚠️  保存记忆到ChromaDB失败: {e}")
     
     def _memory_to_dict(self, memory: MemoryEntry, memory_id: str = None) -> Dict:
         """将MemoryEntry转换为字典（用于JSON存储）"""
@@ -302,7 +306,7 @@ class PersistentMemorySystem(MemorySystem):
                 with open(self.json_storage_path, 'w', encoding='utf-8') as f:
                     json.dump(data, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            print(f"⚠️  保存记忆到JSON失败: {e}")
+            logger.error(f"⚠️  保存记忆到JSON失败: {e}")
     
     def _load_from_chroma(self):
         """从ChromaDB加载所有记忆"""
@@ -314,11 +318,11 @@ class PersistentMemorySystem(MemorySystem):
             results = self.collection.get()
             
             if not results or not results.get("ids"):
-                print("📭 没有历史记忆")
+                logger.info("📭 没有历史记忆")
                 return
             
             count = len(results["ids"])
-            print(f"📚 正在加载 {count} 条历史记忆...")
+            logger.info(f"📚 正在加载 {count} 条历史记忆...")
             
             for i, memory_id in enumerate(results["ids"]):
                 doc = {
@@ -329,10 +333,10 @@ class PersistentMemorySystem(MemorySystem):
                 mid, memory = self._document_to_memory(doc)
                 self.long_term_memory[mid] = memory
             
-            print(f"✅ 已恢复 {count} 条记忆")
+            logger.info(f"✅ 已恢复 {count} 条记忆")
             
         except Exception as e:
-            print(f"⚠️  从ChromaDB加载记忆失败: {e}")
+            logger.error(f"⚠️  从ChromaDB加载记忆失败: {e}")
     
     def encode(
         self,
@@ -361,7 +365,7 @@ class PersistentMemorySystem(MemorySystem):
                 self._save_to_chroma(memory)
             else:
                 self._save_to_json(memory, memory_id)
-            print(f"💾 记忆已持久化: {str(content)[:50]}...")
+            logger.info(f"💾 记忆已持久化: {str(content)[:50]}...")
         
         return memory_id
     
@@ -395,7 +399,7 @@ class PersistentMemorySystem(MemorySystem):
                         return chroma_memories[:top_k]
                         
             except Exception as e:
-                print(f"⚠️  ChromaDB检索失败，回退到内存检索: {e}")
+                logger.error(f"⚠️  ChromaDB检索失败，回退到内存检索: {e}")
         
         # 回退到父类的检索方法（父类返回的是memory_id，需要转换为MemoryEntry）
         parent_results = super().retrieve(query, top_k)
@@ -415,7 +419,7 @@ class PersistentMemorySystem(MemorySystem):
                 self._save_to_json(memory, memory_id)
             count += 1
         
-        print(f"💾 已持久化 {count} 条长期记忆")
+        logger.info(f"💾 已持久化 {count} 条长期记忆")
     
     def clear_persisted_memory(self):
         """清空持久化存储的记忆（危险操作！）"""
@@ -427,19 +431,19 @@ class PersistentMemorySystem(MemorySystem):
                     metadata={"description": "Brain's long-term memory storage"}
                 )
             except Exception as e:
-                print(f"⚠️  清空ChromaDB记忆失败: {e}")
+                logger.error(f"⚠️  清空ChromaDB记忆失败: {e}")
         
         # 清空JSON文件
         if self.json_storage_path.exists():
             try:
                 self.json_storage_path.unlink()
-                print("🗑️  JSON记忆文件已删除")
+                logger.info("🗑️  JSON记忆文件已删除")
             except Exception as e:
-                print(f"⚠️  删除JSON文件失败: {e}")
+                logger.error(f"⚠️  删除JSON文件失败: {e}")
         
         # 清空内存中的长期记忆
         self.long_term_memory.clear()
-        print("🗑️  持久化记忆已清空")
+        logger.info("🗑️  持久化记忆已清空")
     
     def get_memory_stats(self) -> Dict:
         """获取记忆统计信息"""

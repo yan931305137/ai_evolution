@@ -8,6 +8,9 @@ import time
 from typing import Tuple, Optional
 from pynput.mouse import Controller as MouseController, Button
 from pynput.keyboard import Controller as KeyboardController, Key
+from src.utils.logger import setup_logger
+
+logger = setup_logger(name="PeripheralTools")
 
 # 初始化鼠标和键盘控制器
 mouse = MouseController()
@@ -230,7 +233,7 @@ def run_peripheral_test() -> Tuple[bool, Optional[str]]:
         for i, op in enumerate(test_operations, 1):
             op()
             time.sleep(0.1)
-            print(f"第{i}次操作执行成功")
+            logger.info(f"第{i}次操作执行成功")
         
         return True, "连续10次外设操作全部零失误通过测试"
     except Exception as e:

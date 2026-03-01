@@ -19,6 +19,9 @@ Enhanced Hybrid Brain - 增强版Brain+LLM混合模式
 """
 import asyncio
 import logging
+from src.utils.logger import setup_logger
+
+logger = setup_logger(name="EnhancedHybridBrain")
 import time
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
@@ -281,7 +284,7 @@ class EnhancedHybridBrain:
         self.stats = UsageStats()
         self.session_start = datetime.now()
         
-        logging.info(f"🧠⚡ Enhanced Hybrid Brain已初始化 | 本地优先: {local_first}")
+        logger.info(f"🧠⚡ Enhanced Hybrid Brain已初始化 | 本地优先: {local_first}")
     
     @property
     def api_key(self) -> Optional[str]:
@@ -474,19 +477,19 @@ class EnhancedHybridBrain:
         """打印统计信息"""
         stats = self.get_stats()
         
-        print("\n" + "="*50)
-        print("📊 Enhanced Hybrid Brain 运行统计")
-        print("="*50)
-        print(f"总会话数: {stats['total_requests']}")
-        print(f"\n处理分布:")
-        print(f"  📝 模板匹配: {stats['processing_breakdown']['template']}")
-        print(f"  🔍 语义检索: {stats['processing_breakdown']['semantic']}")
-        print(f"  🧠 本地推理: {stats['processing_breakdown']['inference']}")
-        print(f"  🤖 LLM调用:  {stats['processing_breakdown']['llm']}")
-        print(f"\n本地处理率: {stats['local_processing_ratio']:.1%}")
-        print(f"平均响应延迟: {stats['average_latency_ms']:.0f}ms")
-        print(f"预估节省成本: ${stats['estimated_cost_savings']:.4f}")
-        print("="*50)
+        logger.info("="*50)
+        logger.info("📊 Enhanced Hybrid Brain 运行统计")
+        logger.info("="*50)
+        logger.info(f"总会话数: {stats['total_requests']}")
+        logger.info(f"处理分布:")
+        logger.info(f"  📝 模板匹配: {stats['processing_breakdown']['template']}")
+        logger.info(f"  🔍 语义检索: {stats['processing_breakdown']['semantic']}")
+        logger.info(f"  🧠 本地推理: {stats['processing_breakdown']['inference']}")
+        logger.info(f"  🤖 LLM调用:  {stats['processing_breakdown']['llm']}")
+        logger.info(f"本地处理率: {stats['local_processing_ratio']:.1%}")
+        logger.info(f"平均响应延迟: {stats['average_latency_ms']:.0f}ms")
+        logger.info(f"预估节省成本: ${stats['estimated_cost_savings']:.4f}")
+        logger.info("="*50)
     
     def stream_generate(
         self,

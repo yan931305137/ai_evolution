@@ -92,6 +92,41 @@ from tests.test_manager.registry import (
     registry,
 )
 
+# ==================== 依赖注入 Mock ====================
+
+@pytest.fixture(autouse=True)
+def mock_container_deps(monkeypatch):
+    """
+    自动 Mock 容器中的 Config 和 Logger
+    避免测试时依赖真实的配置文件和日志输出
+    """
+    from src.core.container import container
+    from src.utils.config import Config
+    import logging
+
+    # 1. Mock Config
+    mock_cfg = type("MockConfig", (), {
+        "get": lambda self, k, d=None: d,
+        "llm_config": {},
+        "db_config": {},
+        "langsmith_config": {}
+    })()
+    
+    # 2. Mock Logger
+    mock_logger = logging.getLogger("MockLogger")
+    mock_logger.setLevel(logging.DEBUG)
+    
+    # 临时替换容器中的实例
+    original_instances = container._instances.copy()
+    
+    container.register(Config, lambda: mock_cfg)
+    container.register(logging.Logger, lambda: mock_logger)
+    
+    yield
+    
+    # 恢复原始状态
+    container._instances = original_instances
+
 # ==================== Pytest 配置钩子 ====================
 
 def pytest_configure(config):

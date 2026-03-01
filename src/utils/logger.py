@@ -2,8 +2,10 @@
 import logging
 import os
 import sys
+import json
 from logging.handlers import RotatingFileHandler
 from rich.logging import RichHandler
+from src.utils.trace_context import get_trace_id
 
 # 默认日志配置
 DEFAULT_LOG_LEVEL = "INFO"
@@ -11,6 +13,52 @@ DEFAULT_LOG_DIR = "logs"
 DEFAULT_LOG_FILE = "app.log"
 DEFAULT_LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 DEFAULT_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+class JSONFormatter(logging.Formatter):
+    """
+    JSON 日志格式化器，用于结构化日志输出
+    """
+    def format(self, record):
+        log_record = {
+            "timestamp": self.formatTime(record, self.datefmt),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "module": record.module,
+            "function": record.funcName,
+            "line": record.lineno,
+            "path": record.pathname
+        }
+        
+        # 自动注入 trace_id
+        trace_id = get_trace_id()
+        if trace_id:
+            log_record["trace_id"] = trace_id
+        
+        if record.exc_info:
+            log_record["exception"] = self.formatException(record.exc_info)
+            
+        # 处理 extra 字段 (如果有)
+        if hasattr(record, "extra_data"):
+             log_record.update(record.extra_data)
+            
+        return json.dumps(log_record, ensure_ascii=False)
+
+class TraceAwareRichHandler(RichHandler):
+    """
+    集成 Trace ID 的 RichHandler
+    """
+    def emit(self, record):
+        trace_id = get_trace_id()
+        if trace_id:
+            # 将 trace_id (前8位) 添加到消息前缀，或者作为 extra 字段显示
+            # 这里简单起见，修改 message 加上 trace_id 前缀
+            original_msg = record.msg
+            record.msg = f"[{trace_id[:8]}] {original_msg}"
+            super().emit(record)
+            record.msg = original_msg # 恢复原始消息，以免影响其他 Handler
+        else:
+            super().emit(record)
 
 def setup_logger(
     name: str = None, 
@@ -36,6 +84,7 @@ def setup_logger(
     
     log_dir = log_dir or os.getenv("LOG_DIR", DEFAULT_LOG_DIR)
     log_file = log_file or os.getenv("LOG_FILE", DEFAULT_LOG_FILE)
+    log_file_format = os.getenv("LOG_FILE_FORMAT", "text").lower()
     
     # 获取 logger
     logger = logging.getLogger(name)
@@ -45,8 +94,8 @@ def setup_logger(
     if logger.hasHandlers():
         logger.handlers.clear()
         
-    # 1. Console Handler (使用 Rich)
-    console_handler = RichHandler(
+    # 1. Console Handler (使用 TraceAwareRichHandler)
+    console_handler = TraceAwareRichHandler(
         rich_tracebacks=True,
         markup=True,
         show_time=True,
@@ -72,10 +121,13 @@ def setup_logger(
         )
         file_handler.setLevel(log_level)
         
-        formatter = logging.Formatter(
-            fmt=DEFAULT_LOG_FORMAT,
-            datefmt=DEFAULT_DATE_FORMAT
-        )
+        if log_file_format == "json":
+            formatter = JSONFormatter(datefmt=DEFAULT_DATE_FORMAT)
+        else:
+            formatter = logging.Formatter(
+                fmt=DEFAULT_LOG_FORMAT,
+                datefmt=DEFAULT_DATE_FORMAT
+            )
         file_handler.setFormatter(formatter)
         
         logger.addHandler(file_handler)
@@ -102,3 +154,7 @@ def get_logger(name: str) -> logging.Logger:
 
 # 方便直接导入使用的默认 logger
 logger = get_logger("OpenClaw")
+
+# Register with Container
+from src.core.container import container
+container.register(logging.Logger, lambda: logger)

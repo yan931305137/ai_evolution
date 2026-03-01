@@ -5,6 +5,10 @@
 import time
 import json
 import logging
+from src.utils.logger import setup_logger
+
+logger = setup_logger(name="MultimodalPerception")
+
 from typing import Dict, List, Optional, Union
 from dataclasses import dataclass
 from enum import Enum
@@ -16,7 +20,7 @@ try:
     SDK_AVAILABLE = True
 except ImportError:
     SDK_AVAILABLE = False
-    logging.warning("coze_coding_dev_sdk not available. Multimodal perception will be limited.")
+    logger.warning("coze_coding_dev_sdk not available. Multimodal perception will be limited.")
     from typing import Any
     LLMClient = Any
 
@@ -73,7 +77,7 @@ class MultimodalPerceptionSystem:
             self.template_engine = TemplateResponseEngine()
             # 添加视觉感知专用模板
             self._init_visual_templates()
-            logging.info("👁️ 多模态感知系统启用本地模板，简单描述任务将零成本处理")
+            logger.info("👁️ 多模态感知系统启用本地模板，简单描述任务将零成本处理")
         else:
             self.template_engine = None
         
@@ -136,7 +140,7 @@ class MultimodalPerceptionSystem:
             感知结果
         """
         if not SDK_AVAILABLE:
-            logging.error("LLM SDK not available for multimodal perception")
+            logger.error("LLM SDK not available for multimodal perception")
             return None
         
         try:
@@ -145,7 +149,7 @@ class MultimodalPerceptionSystem:
                 local_content = self._use_local_template(task, detail_level)
                 if local_content:
                     self.stats["local_template_hits"] += 1
-                    logging.debug(f"使用本地模板处理图像{task}任务")
+                    logger.debug(f"使用本地模板处理图像{task}任务")
                     
                     result = PerceptionResult(
                         content=local_content,
@@ -226,7 +230,7 @@ class MultimodalPerceptionSystem:
             return result
             
         except Exception as e:
-            logging.error(f"Image perception failed: {e}")
+            logger.error(f"Image perception failed: {e}")
             return None
     
     def perceive_video(self,
@@ -241,7 +245,7 @@ class MultimodalPerceptionSystem:
             感知结果
         """
         if not SDK_AVAILABLE:
-            logging.error("LLM SDK not available for multimodal perception")
+            logger.error("LLM SDK not available for multimodal perception")
             return None
         
         try:
@@ -305,7 +309,7 @@ class MultimodalPerceptionSystem:
             return result
             
         except Exception as e:
-            logging.error(f"Video perception failed: {e}")
+            logger.error(f"Video perception failed: {e}")
             return None
     
     def compare_images(self,
@@ -371,7 +375,7 @@ class MultimodalPerceptionSystem:
             return result
             
         except Exception as e:
-            logging.error(f"Image comparison failed: {e}")
+            logger.error(f"Image comparison failed: {e}")
             return None
     
     def detect_objects(self,
@@ -438,7 +442,7 @@ class MultimodalPerceptionSystem:
                 return {"raw_text": content}
             
         except Exception as e:
-            logging.error(f"Object detection failed: {e}")
+            logger.error(f"Object detection failed: {e}")
             return None
     
     def _generate_image_prompt(self, task: str, detail_level: str) -> str:
@@ -552,19 +556,19 @@ def create_multimodal_perception(llm_client: LLMClient,
 
 
 if __name__ == "__main__":
-    print("=== 多模态感知系统测试 ===\n")
+    logger.info("=== 多模态感知系统测试 ===\n")
     
     if not SDK_AVAILABLE:
-        print("注意：需要安装coze_coding_dev_sdk才能使用多模态感知功能。")
-        print("主要功能：")
-        print("1. 图像理解：描述、分析、OCR")
-        print("2. 视频分析：总结、转录")
-        print("3. 图像比较：对比两张图像")
-        print("4. 物体检测：识别图像中的物体并返回坐标")
+        logger.warning("注意：需要安装coze_coding_dev_sdk才能使用多模态感知功能。")
+        logger.info("主要功能：")
+        logger.info("1. 图像理解：描述、分析、OCR")
+        logger.info("2. 视频分析：总结、转录")
+        logger.info("3. 图像比较：对比两张图像")
+        logger.info("4. 物体检测：识别图像中的物体并返回坐标")
     else:
-        print("多模态感知系统已就绪。")
-        print("支持的功能：")
-        print("- 图像理解")
-        print("- 视频分析")
-        print("- 图像比较")
-        print("- 物体检测")
+        logger.info("多模态感知系统已就绪。")
+        logger.info("支持的功能：")
+        logger.info("- 图像理解")
+        logger.info("- 视频分析")
+        logger.info("- 图像比较")
+        logger.info("- 物体检测")

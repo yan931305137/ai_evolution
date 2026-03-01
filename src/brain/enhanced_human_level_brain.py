@@ -17,6 +17,9 @@ from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime
 import json
 import re
+from src.utils.logger import setup_logger
+
+logger = setup_logger(name="EnhancedBrain")
 
 from src.brain.human_level_brain import HumanLevelBrain, DevelopmentalStage
 from src.utils.llm import LLMClient
@@ -97,7 +100,7 @@ class EnhancedHumanLevelBrain(HumanLevelBrain):
         self.enable_extended_knowledge = enable_extended_knowledge and KNOWLEDGE_BASE_AVAILABLE
         if self.enable_extended_knowledge:
             self.extended_knowledge = get_knowledge_base()
-            print(f"📚 扩展知识库已启用 | {len(self.extended_knowledge.domains)} 个领域")
+            logger.info(f"📚 扩展知识库已启用 | {len(self.extended_knowledge.domains)} 个领域")
         
         # 知识图谱
         self.knowledge_graph = None
@@ -106,23 +109,23 @@ class EnhancedHumanLevelBrain(HumanLevelBrain):
             self.knowledge_graph = get_knowledge_graph()
             try:
                 self.knowledge_graph.load(knowledge_graph_path)
-                print(f"🕸️ 知识图谱已加载 | 路径: {knowledge_graph_path}")
+                logger.info(f"🕸️ 知识图谱已加载 | 路径: {knowledge_graph_path}")
             except FileNotFoundError:
-                print(f"🕸️ 知识图谱已初始化 | 路径: {knowledge_graph_path}")
+                logger.info(f"🕸️ 知识图谱已初始化 | 路径: {knowledge_graph_path}")
         
         # 强化学习系统
         self.rl_system = None
         self.enable_rl = enable_reinforcement_learning and RL_AVAILABLE
         if self.enable_rl:
             self.rl_system = get_rl_system()
-            print("🎯 强化学习系统已启用")
+            logger.info("🎯 强化学习系统已启用")
         
         # 自我进化系统
         self.self_evolution = None
         self.enable_self_evolution = enable_self_evolution and SELF_EVOLUTION_AVAILABLE
         if self.enable_self_evolution:
             self.self_evolution = SelfEvolutionSystem()
-            print("🧬 自我进化系统已启用")
+            logger.info("🧬 自我进化系统已启用")
         
         # 当前交互上下文（用于 RL 学习）
         self.current_context = {}
@@ -296,7 +299,7 @@ class EnhancedHumanLevelBrain(HumanLevelBrain):
                 selected_strategy=self.selected_strategy,
                 reward=feedback
             )
-            print(f"🎯 RL 学习: {self.selected_strategy} → 反馈 {feedback:+.2f}")
+            logger.info(f"🎯 RL 学习: {self.selected_strategy} → 反馈 {feedback:+.2f}")
         
         if self.enable_self_evolution:
             # 记录经验到自我进化系统
@@ -454,7 +457,7 @@ class EnhancedHumanLevelBrain(HumanLevelBrain):
         with open(stats_path, 'w', encoding='utf-8') as f:
             json.dump(self.processing_stats, f, ensure_ascii=False, indent=2)
         
-        print(f"💾 增强大脑状态已保存到: {directory}")
+        logger.info(f"💾 增强大脑状态已保存到: {directory}")
     
     def load_state(self, directory: str):
         """加载所有状态"""
@@ -478,7 +481,7 @@ class EnhancedHumanLevelBrain(HumanLevelBrain):
             with open(stats_path, 'r', encoding='utf-8') as f:
                 self.processing_stats = json.load(f)
         
-        print(f"📂 增强大脑状态已从 {directory} 加载")
+        logger.info(f"📂 增强大脑状态已从 {directory} 加载")
 
 
 # ==================== 便捷函数 ====================

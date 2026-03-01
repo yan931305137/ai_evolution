@@ -474,6 +474,93 @@ class HybridBrainClient:
                 reasoning_content=f"错误: {str(e)}"
             )
     
+    async def agenerate(
+        self,
+        messages: List[Dict[str, str]],
+        stream: bool = False,
+        temperature: float = 0.7
+    ) -> Any:
+        """
+        异步生成响应
+        
+        Args:
+            messages: 消息列表
+            stream: 是否流式输出
+            temperature: 温度参数
+            
+        Returns:
+            HybridResponse对象 或 异步生成器
+        """
+        try:
+            # Step 1: Brain处理（思考）
+            sensory_input = self._messages_to_stimulus(messages)
+            
+            # 直接异步调用
+            brain_result = await self.brain.experience(sensory_input)
+            
+            # Step 2: 提取用户输入
+            user_input = ""
+            for msg in reversed(messages):
+                if msg.get("role") == "user":
+                    user_input = msg.get("content", "")
+                    break
+            
+            # Step 3: 构建混合Prompt
+            hybrid_messages = self._build_hybrid_prompt(
+                user_input=user_input,
+                brain_result=brain_result,
+                original_messages=messages
+            )
+            
+            # Step 4: LLM生成（表达）
+            # 如果是流式，agenerate返回异步生成器
+            llm_result = await self.llm.agenerate(
+                messages=hybrid_messages,
+                stream=stream,
+                temperature=temperature
+            )
+            
+            if stream:
+                return llm_result
+            
+            # Step 5: 更新统计 (非流式)
+            self.interaction_count += 1
+            self.developmental_stage = brain_result.get("developmental_stage", self.developmental_stage)
+            
+            # 提取内容
+            content = llm_result.content if hasattr(llm_result, 'content') else str(llm_result)
+            
+            # 构建reasoning_content
+            reasoning_parts = []
+            cognitive_response = brain_result.get("cognitive_response", {})
+            if cognitive_response:
+                reasoning_parts.append(f"Brain决策: {getattr(cognitive_response, 'action', 'unknown')}")
+                reasoning_parts.append(f"置信度: {getattr(cognitive_response, 'confidence', 0):.2f}")
+            
+            emotional_state = brain_result.get("emotional_state")
+            if emotional_state:
+                reasoning_parts.append(f"情感状态: valence={emotional_state.valence:.2f}, arousal={emotional_state.arousal:.2f}")
+            
+            reasoning_parts.append(f"发育阶段: {self.developmental_stage}")
+            reasoning_parts.append(f"LLM: {self.llm_provider}")
+            
+            return HybridResponse(
+                content=content,
+                reasoning_content="\n".join(reasoning_parts),
+                brain_state={
+                    "action": getattr(cognitive_response, "action", "unknown"),
+                    "emotional_valence": emotional_state.valence if emotional_state else 0,
+                    "developmental_stage": self.developmental_stage
+                }
+            )
+            
+        except Exception as e:
+            logging.error(f"Hybrid Brain异步处理失败: {e}")
+            return HybridResponse(
+                content="抱歉，我当前状态不太好，请稍后再试。",
+                reasoning_content=f"错误: {str(e)}"
+            )
+
     def stream_generate(
         self,
         messages: List[Dict[str, str]],
@@ -492,6 +579,20 @@ class HybridBrainClient:
         words = content.split()
         for word in words:
             yield word + " "
+
+    async def astream_generate(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.7
+    ):
+        """
+        异步流式生成
+        """
+        # 调用 agenerate(stream=True) 获取生成器
+        async_gen = await self.agenerate(messages, stream=True, temperature=temperature)
+        
+        async for chunk in async_gen:
+            yield chunk
     
     def get_stats(self) -> Dict:
         """获取混合大脑运行统计"""

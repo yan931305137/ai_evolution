@@ -1,13 +1,16 @@
 import sys
 import platform
 import subprocess
+from src.utils.logger import setup_logger
+
+logger = setup_logger(name="SystemTools")
 
 def restart_system() -> str:
     """
     Triggers a system restart to apply changes.
     Stops the current process and signals the Kernel to reboot.
     """
-    print("Restarting system...")
+    logger.info("Restarting system...")
     sys.exit(42) # Magic number for restart in main.py kernel
 
 def run_command(command: str) -> str:
