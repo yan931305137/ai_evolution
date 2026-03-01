@@ -27,6 +27,7 @@ class SimpleEmbeddingFunction(EmbeddingFunction):
     """
     Simple embedding function using hash-based approach.
     No external model download required.
+    Fallback when sentence-transformers is not available.
     """
     def __init__(self, model_name: str = "simple"):
         self.model_name = model_name
@@ -45,6 +46,33 @@ class SimpleEmbeddingFunction(EmbeddingFunction):
     def __call__(self, input: Documents) -> Embeddings:
         embeddings = [self._simple_hash_embed(text) for text in input]
         return embeddings
+
+class LocalEmbeddingFunction(EmbeddingFunction):
+    """
+    Local embedding function using SentenceTransformer.
+    Uses 'all-MiniLM-L6-v2' by default (384 dimensions).
+    """
+    def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
+        self.model_name = model_name
+        self.model = None
+        try:
+            from sentence_transformers import SentenceTransformer
+            # Initialize model (downloads to cache if not present)
+            self.model = SentenceTransformer(model_name)
+        except ImportError:
+            logging.warning("sentence-transformers not installed.")
+        except Exception as e:
+            logging.error(f"Failed to load SentenceTransformer: {e}")
+
+    def __call__(self, input: Documents) -> Embeddings:
+        if not self.model:
+            # Fallback to simple hash if model failed to load
+            return SimpleEmbeddingFunction().__call__(input)
+        
+        # encode returns numpy array or list of numpy arrays
+        embeddings = self.model.encode(input)
+        # Convert to list of lists for ChromaDB
+        return embeddings.tolist()
 
 class MemorySystem:
     """
@@ -77,18 +105,22 @@ class MemorySystem:
                 # Initialize persistent client
                 self.client = chromadb.PersistentClient(path=db_path)
             
-            # 强制使用 Simple Embedding，避免下载大模型
-            # 如需更好的语义搜索，可改用 API embedding
-            ef = SimpleEmbeddingFunction()
-            logging.info("Using simple hash-based embedding (no model download)")
+            # Use Local Embedding with fallback to Simple
+            # This provides better semantic search quality
+            ef = LocalEmbeddingFunction()
+            if ef.model:
+                logging.info(f"Using local SentenceTransformer embedding ({ef.model_name})")
+            else:
+                logging.warning("Using simple hash-based embedding (fallback)")
             
+            # Use v2 collections to ensure embedding compatibility
             self.conversations = self.client.get_or_create_collection(
-                name="conversations",
+                name="conversations_v2",
                 embedding_function=ef,
                 metadata={"hnsw:space": "cosine"}  # 明确使用余弦距离，保证相似度计算准确
             )
             self.knowledge = self.client.get_or_create_collection(
-                name="knowledge",
+                name="knowledge_v2",
                 embedding_function=ef,
                 metadata={"hnsw:space": "cosine"}  # 明确使用余弦距离，保证相似度计算准确
             )

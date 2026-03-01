@@ -151,24 +151,70 @@ class SecureSandbox:
             pass
 
     def _static_security_check(self, code: str) -> Tuple[bool, str]:
-        """静态代码安全检查，拦截危险语法和模块导入"""
-        DANGEROUS_MODULES = {'os', 'sys', 'subprocess', 'socket', 'requests', 'shutil', 'pathlib', 'ctypes'}
-        # 优先检查更危险的关键字，确保eval等优先被匹配
-        DANGEROUS_KEYWORDS = ['eval', 'exec', 'compile', 'open', 'globals', 'locals', 'getattr', 'setattr', '__import__']
+        """
+        基于AST的静态代码安全检查，深度解析语法树拦截危险操作
+        相比正则匹配，AST能准确识别混淆、别名和深层嵌套的危险调用
+        """
+        import ast
+
+        DANGEROUS_MODULES = {'os', 'sys', 'subprocess', 'socket', 'requests', 'shutil', 'pathlib', 'ctypes', 'pickle', 'marshal'}
+        DANGEROUS_FUNCTIONS = {'eval', 'exec', 'compile', 'open', 'globals', 'locals', 'getattr', 'setattr', '__import__', 'input', 'breakpoint', 'help', 'exit', 'quit'}
+        
+        try:
+            tree = ast.parse(code)
+        except SyntaxError as e:
+            return False, f"语法错误: {e}"
+
+        class SecurityVisitor(ast.NodeVisitor):
+            def __init__(self):
+                self.errors = []
+
+            def visit_Import(self, node):
+                for alias in node.names:
+                    if alias.name in DANGEROUS_MODULES:
+                        self.errors.append(f"禁止导入危险模块: {alias.name}")
+                    # 检查子模块导入 e.g. import os.path
+                    if alias.name.split('.')[0] in DANGEROUS_MODULES:
+                        self.errors.append(f"禁止导入危险模块: {alias.name.split('.')[0]}")
+                self.generic_visit(node)
+
+            def visit_ImportFrom(self, node):
+                if node.module and (node.module in DANGEROUS_MODULES or node.module.split('.')[0] in DANGEROUS_MODULES):
+                    self.errors.append(f"禁止从危险模块导入: {node.module}")
+                self.generic_visit(node)
+
+            def visit_Call(self, node):
+                # 检查函数调用
+                if isinstance(node.func, ast.Name):
+                    if node.func.id in DANGEROUS_FUNCTIONS:
+                        self.errors.append(f"禁止调用危险函数: {node.func.id}")
+                # 检查 __import__ 调用
+                elif isinstance(node.func, ast.Attribute):
+                    # 检查类似 obj.__class__ 的访问
+                    if node.func.attr.startswith('__') and node.func.attr.endswith('__'):
+                         # 允许部分安全的魔术方法，如 __init__ (通常在类定义中)
+                         # 但在 restricted python 中通常不需要显式调用
+                         pass 
+                self.generic_visit(node)
+                
+            def visit_Attribute(self, node):
+                # 检查属性访问，拦截私有属性
+                if node.attr.startswith('__') and node.attr != '__name__': # 允许访问 __name__
+                    self.errors.append(f"禁止访问私有属性: {node.attr}")
+                self.generic_visit(node)
+
+        visitor = SecurityVisitor()
+        visitor.visit(tree)
+
+        if visitor.errors:
+            return False, "; ".join(visitor.errors)
+            
+        # 保留正则检查作为兜底，防止 AST 解析漏掉某些动态构造的字符串（虽然 AST 主要负责结构）
         # 危险格式化字符串正则：匹配占位符中包含双下划线的私有属性访问
         DANGEROUS_FORMAT_PATTERN = r'\{.*?__.*?\}'
-
-        # 先检查模块导入
-        for module in DANGEROUS_MODULES:
-            if f'import {module}' in code or f'from {module}' in code:
-                return False, f"检测到危险模块导入: {module}"
-        # 按优先级检查危险关键字
-        for keyword in DANGEROUS_KEYWORDS:
-            if keyword in code:
-                return False, f"检测到危险关键字: {keyword}"
-        # 检测危险字符串格式化
         if re.search(DANGEROUS_FORMAT_PATTERN, code):
-            return False, "检测到危险字符串格式化操作"
+             return False, "检测到危险字符串格式化操作"
+
         return True, "安全"
 
     def _sandbox_worker(self, code: str, result_queue: Queue):

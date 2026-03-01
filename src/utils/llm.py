@@ -266,7 +266,27 @@ class LLMClient:
         if self.provider == "hybrid":
             return self._hybrid_client.generate(messages, stream=stream, temperature=temperature)
         
-        try:
+        from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+        import openai
+        import httpx
+
+        # 定义重试策略：指数退避，最大尝试3次
+        # 针对网络错误、超时、API错误进行重试
+        @retry(
+            stop=stop_after_attempt(3),
+            wait=wait_exponential(multiplier=1, min=4, max=10),
+            retry=retry_if_exception_type((
+                openai.APIConnectionError, 
+                openai.RateLimitError, 
+                openai.APITimeoutError,
+                openai.InternalServerError,
+                httpx.RequestError,
+                httpx.ConnectTimeout,
+                httpx.ReadTimeout
+            )),
+            reraise=True
+        )
+        def _call_api_with_retry():
             # 转换消息格式
             langchain_messages = self._convert_messages_to_langchain(messages)
             
@@ -289,9 +309,11 @@ class LLMClient:
                     self._save_interaction_sample(messages, response.content)
                 
                 return response
-                
+
+        try:
+            return _call_api_with_retry()
         except Exception as e:
-            logging.error(f"Coze API 调用失败: {e}")
+            logging.error(f"Coze API 调用失败 (已重试): {e}")
             # 返回兜底响应
             return self._get_fallback_response(messages)
     
@@ -315,7 +337,26 @@ class LLMClient:
         if self.provider == "hybrid":
             return await self._hybrid_client.agenerate(messages, stream=stream, temperature=temperature)
         
-        try:
+        from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+        import openai
+        import httpx
+
+        # 定义异步重试策略
+        @retry(
+            stop=stop_after_attempt(3),
+            wait=wait_exponential(multiplier=1, min=4, max=10),
+            retry=retry_if_exception_type((
+                openai.APIConnectionError, 
+                openai.RateLimitError, 
+                openai.APITimeoutError,
+                openai.InternalServerError,
+                httpx.RequestError,
+                httpx.ConnectTimeout,
+                httpx.ReadTimeout
+            )),
+            reraise=True
+        )
+        async def _acall_api_with_retry():
             # 转换消息格式
             langchain_messages = self._convert_messages_to_langchain(messages)
             
@@ -337,9 +378,11 @@ class LLMClient:
                     self._save_interaction_sample(messages, response.content)
                 
                 return response
-                
+
+        try:
+            return await _acall_api_with_retry()
         except Exception as e:
-            logging.error(f"Async API 调用失败: {e}")
+            logging.error(f"Async API 调用失败 (已重试): {e}")
             return self._get_fallback_response(messages)
 
     def _get_fallback_response(self, messages: List[Dict[str, str]]) -> any:

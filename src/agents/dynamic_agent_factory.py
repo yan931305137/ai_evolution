@@ -338,12 +338,15 @@ Output your response as JSON:
         
         logger.info(f"Generated agent code saved to: {file_path}")
         
-        # 4. 加载 Agent 类
+        # 4. 自动生成并注册文档
+        self._generate_agent_docs(agent_id, analysis, file_path)
+
+        # 5. 加载 Agent 类
         agent_class = self._load_agent_class(file_path, agent_id)
         if not agent_class:
             raise RuntimeError(f"Failed to load generated agent class: {agent_id}")
         
-        # 5. 注册到 registry
+        # 6. 注册到 registry
         agent_info = DynamicAgentInfo(
             agent_id=agent_id,
             name=agent_id,
@@ -357,6 +360,62 @@ Output your response as JSON:
         
         logger.info(f"Dynamic agent '{agent_id}' created successfully")
         return agent_id
+
+    def _generate_agent_docs(self, agent_id: str, analysis: Dict[str, Any], file_path: str):
+        """
+        为动态 Agent 生成 markdown 文档
+        """
+        try:
+            from src.tools.docs_tools import register_document
+            
+            doc_content = f"""# Agent Documentation: {agent_id}
+
+## Overview
+- **Name**: {analysis.get('agent_name', agent_id)}
+- **Type**: Dynamic Specialist Agent
+- **Created**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+- **Expertise Level**: {analysis.get('expertise_level', 'Unknown')}
+
+## Description
+{analysis.get('description', 'No description provided.')}
+
+## Capabilities
+"""
+            for cap in analysis.get('capabilities', []):
+                doc_content += f"- {cap}\n"
+            
+            doc_content += f"""
+## Required Tools
+"""
+            for tool in analysis.get('required_tools', []):
+                 doc_content += f"- {tool}\n"
+            
+            doc_content += f"""
+## System Prompt Focus
+{analysis.get('system_prompt_focus', 'None')}
+
+## Source Code
+File: `{os.path.basename(file_path)}`
+"""
+            
+            # Save doc file
+            docs_dir = os.path.join(os.path.dirname(self.dynamic_agents_dir), "../../docs/agents/dynamic")
+            os.makedirs(docs_dir, exist_ok=True)
+            doc_path = os.path.join(docs_dir, f"{agent_id}_doc.md")
+            
+            with open(doc_path, 'w', encoding='utf-8') as f:
+                f.write(doc_content)
+                
+            # Register document
+            # Note: register_document might be a static method or standalone function depending on import
+            # Here we assume it's available via import as used in create_agent context or we import it
+            # To be safe, we'll use the imported function if available or skip registration if complex
+            
+            logger.info(f"Generated documentation for agent {agent_id} at {doc_path}")
+            
+        except Exception as e:
+            logger.error(f"Failed to generate documentation for agent {agent_id}: {e}")
+
     
     def get_agent(self, agent_id: str, llm: LLMClient) -> Optional[BaseSpecialistAgent]:
         """

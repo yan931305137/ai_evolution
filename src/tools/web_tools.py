@@ -4,8 +4,9 @@ import re
 from bs4 import BeautifulSoup
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, quote_plus
 import time
+import webbrowser
 
 _search_cache = {}
 
@@ -20,8 +21,6 @@ class WebPageContent:
     ad_ratio: float
     quality_score: float
     metadata: Dict[str, Any]
-
-import webbrowser
 
 def open_browser(url: str) -> str:
     """
@@ -58,14 +57,20 @@ def get_weather(location: str = "beijing") -> str:
     except Exception as e:
         return f"Error getting weather: {str(e)}"
 
-def web_search(query: str, max_results: int = 5) -> str:
+def web_search(query: str, max_results: int = 5, site: str = None) -> str:
     """
-    Search the web for information using Baidu (国内网络环境可用).
+    Search the web for information using Baidu.
+    Supports site-specific search (e.g., site='stackoverflow.com').
     """
     global _search_cache
     
+    # Construct query with site filter if provided
+    search_query = query
+    if site:
+        search_query = f"site:{site} {query}"
+    
     # 1. Check Cache
-    cache_key = f"{query}::{max_results}"
+    cache_key = f"{search_query}::{max_results}"
     if cache_key in _search_cache:
         return f"(Cached) {_search_cache[cache_key]}"
 
@@ -82,7 +87,7 @@ def web_search(query: str, max_results: int = 5) -> str:
         }
         
         url = "https://www.baidu.com/s"
-        params = {"wd": query, "rn": max_results + 10} # rn参数指定返回结果数量
+        params = {"wd": search_query, "rn": max_results + 10} # rn参数指定返回结果数量
         
         with httpx.Client(timeout=30.0, verify=False, follow_redirects=True, headers=headers) as client:
             response = client.get(url, params=params)
@@ -144,7 +149,7 @@ def web_search(query: str, max_results: int = 5) -> str:
                     continue
         
         if not results:
-            return "No results found on Baidu."
+            return f"No results found on Baidu for query: {search_query}"
         
         formatted = []
         for i, r in enumerate(results, 1):
@@ -160,9 +165,26 @@ def web_search(query: str, max_results: int = 5) -> str:
         return output
         
     except Exception as e:
-        logging.error(f"Bing search unexpected error: {str(e)}, query: {query}")
+        logging.error(f"Search unexpected error: {str(e)}, query: {search_query}")
         return f"Error searching web: {str(e)}"
 
+def search_knowledge_base(query: str, source: str = "wikipedia") -> str:
+    """
+    Search specific knowledge bases (Wikipedia, StackOverflow).
+    
+    Args:
+        query: Search query
+        source: 'wikipedia' or 'stackoverflow'
+        
+    Returns:
+        Formatted search results
+    """
+    if source.lower() == "wikipedia":
+        return web_search(query, site="wikipedia.org")
+    elif source.lower() == "stackoverflow":
+        return web_search(query, site="stackoverflow.com")
+    else:
+        return web_search(query)  # Fallback to general search
 
 # ============================================
 # 网页内容爬取功能

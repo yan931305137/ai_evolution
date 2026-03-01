@@ -5,7 +5,7 @@ from src import skills
 from .file_tools import list_files, read_file, write_file, move_file, scan_project, register_document, check_documents_status
 from .code_tools import modify_skill, patch_core_code, create_skill, patch_code, run_linter
 from .system_tools import restart_system, run_command
-from .web_tools import get_weather, web_search, open_browser, fetch_web_content
+from .web_tools import get_weather, web_search, open_browser, fetch_web_content, search_knowledge_base
 from .interaction_tools import ask_user
 from .memory_tools import remember_insight, recall_knowledge
 from .task_tools import manage_todo
@@ -39,6 +39,7 @@ class Tools:
     create_skill = staticmethod(create_skill)
     get_weather = staticmethod(get_weather)
     web_search = staticmethod(web_search)
+    search_knowledge_base = staticmethod(search_knowledge_base)
     open_browser = staticmethod(open_browser)
     fetch_web_content = staticmethod(fetch_web_content)
     
@@ -159,6 +160,7 @@ class Tools:
             "5. run_command(command): Execute a shell command (e.g., 'mkdir new_folder', 'python script.py').",
             "6. scan_project(directory='.'): Recursively scan the project structure and summarize code files.",
             "7. web_search(query): Search the internet for information using Bing.",
+            "158. search_knowledge_base(query, source='wikipedia'): Search Wikipedia or StackOverflow.",
             "8. open_browser(url): Open a URL in the system's default web browser.",
             "9. patch_code(file_path, old_str, new_str): Modify source code by replacing a block of text.",
             "10. get_weather(location): Get current weather report for a location.",

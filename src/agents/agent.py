@@ -59,6 +59,100 @@ class AutoAgent:
             self.agent_factory = get_factory(llm)
             logger.info("Dynamic agent system initialized")
 
+    def enter_sleep_mode(self, min_sleep_seconds: int = 60, max_backlog_items: int = 5):
+        """
+        进入睡眠模式：在低活动期间自动处理 Backlog 任务。
+        
+        工作流程：
+        1. 检查 TODO 列表中的 Backlog 任务。
+        2. 如果有任务，尝试自动执行（低风险任务）。
+        3. 如果无任务或任务执行完毕，进入休眠。
+        4. 监听外部中断（如用户输入）以唤醒（模拟实现）。
+        
+        Args:
+            min_sleep_seconds: 最小休眠时间（秒）
+            max_backlog_items: 每次唤醒最多处理的任务数
+        """
+        console.print("[bold blue]💤 Entering Sleep Mode...[/bold blue]")
+        console.print("[dim]Monitoring backlog tasks and system status...[/dim]")
+        
+        while True:
+            try:
+                # 1. 检查用户中断 (模拟，实际可能需要异步事件监听)
+                # if check_user_activity(): break
+                
+                # 2. 获取 Backlog 任务
+                # 使用 manage_todo 获取所有任务
+                # 注意：这里假设 manage_todo 返回的是格式化的字符串，需要解析
+                # 为了更健壮，我们直接调用 Tools.execute_tool 获取原始数据可能更好，
+                # 但 manage_todo 目前只返回字符串。我们尝试解析或扩展 manage_todo。
+                # 暂时通过字符串解析 Backlog 部分
+                
+                todo_output = Tools.execute_tool("manage_todo", action="list")
+                backlog_tasks = []
+                
+                # 简单的解析逻辑：查找 "[ ]" 且不在 High/Medium Priority 下的任务
+                # 或者更简单：只处理标记为 [Backlog] 或 [Low] 的任务
+                # 这里我们假设 TODO 工具能支持筛选，或者我们自己解析
+                
+                lines = todo_output.split('\n')
+                is_backlog_section = False
+                for line in lines:
+                    if "Backlog" in line or "Low Priority" in line:
+                        is_backlog_section = True
+                        continue
+                    if line.startswith("##") and is_backlog_section:
+                        is_backlog_section = False # End of backlog section
+                    
+                    if is_backlog_section and "- [ ]" in line:
+                        # 提取任务描述
+                        task_desc = line.split("- [ ]")[1].strip()
+                        # 提取任务ID（假设格式）或生成临时ID
+                        # 实际情况中 manage_todo list 应该返回带 ID 的列表
+                        backlog_tasks.append(task_desc)
+                
+                if not backlog_tasks:
+                    console.print(f"[dim]No backlog tasks found. Sleeping for {min_sleep_seconds}s...[/dim]")
+                    time.sleep(min_sleep_seconds)
+                    continue
+                
+                # 3. 处理任务
+                console.print(f"[bold green]✨ Waking up to process {len(backlog_tasks)} backlog tasks...[/bold green]")
+                
+                processed_count = 0
+                for task in backlog_tasks:
+                    if processed_count >= max_backlog_items:
+                        break
+                        
+                    console.print(f"[bold yellow]Processing Backlog Task:[/bold yellow] {task}")
+                    
+                    # 只有低风险任务才自动执行 (包含 "research", "analyze", "check", "list" 等关键词)
+                    low_risk_keywords = ["research", "analyze", "check", "list", "read", "summary", "report", "调研", "分析", "检查", "总结"]
+                    is_low_risk = any(kw in task.lower() for kw in low_risk_keywords)
+                    
+                    if is_low_risk:
+                        # 执行任务
+                        result = self.run(task)
+                        console.print(f"[dim]Task result: {result[:100]}...[/dim]")
+                        
+                        # 更新 TODO 状态 (需要扩展 manage_todo 支持按内容更新，或者我们只能跳过这步)
+                        # Tools.execute_tool("manage_todo", action="update", status="completed", description=task)
+                        processed_count += 1
+                    else:
+                        console.print(f"[dim]Skipping high-risk task in sleep mode: {task}[/dim]")
+                
+                # 4. 休眠等待下一轮
+                console.print(f"[dim]Backlog processing cycle complete. Sleeping for {min_sleep_seconds}s...[/dim]")
+                time.sleep(min_sleep_seconds)
+                
+            except KeyboardInterrupt:
+                console.print("[bold red]Sleep Mode Interrupted by User[/bold red]")
+                break
+            except Exception as e:
+                logger.error(f"Error in Sleep Mode: {e}")
+                console.print(f"[red]Sleep Mode Error: {e}[/red]")
+                time.sleep(min_sleep_seconds) # 防止死循环快速报错
+
     def _retrieve_memory_context(self, goal: str) -> str:
         """Retrieve relevant memories based on the goal."""
         console.print("[dim]Accessing Long-term Memory...[/dim]")
