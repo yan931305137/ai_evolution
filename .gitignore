@@ -62,6 +62,8 @@ coverage.xml
 # Data & Database
 # ============================================
 data/chroma_db/
+src/data/chroma_db/
+src/data/
 *.db
 *.sqlite3
 *.sqlite
@@ -228,4 +230,4 @@ dev_config.yaml
 prof/
 *.prof
 line_profiler_results.txt
-training
+training/

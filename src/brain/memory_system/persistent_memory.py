@@ -55,7 +55,16 @@ class PersistentMemorySystem(MemorySystem):
         """
         super().__init__(capacity=capacity)
         
-        self.persist_directory = Path(persist_directory)
+        # 确保路径是绝对路径，且基于项目根目录，而非相对路径
+        # 如果是相对路径，转换为基于项目根目录的绝对路径
+        path_obj = Path(persist_directory)
+        if not path_obj.is_absolute():
+            # 获取项目根目录 (假设 src 是项目根目录下的子目录)
+            root_dir = Path(__file__).resolve().parent.parent.parent.parent
+            self.persist_directory = root_dir / persist_directory
+        else:
+            self.persist_directory = path_obj
+            
         self.collection_name = collection_name
         self.auto_persist = auto_persist
         
