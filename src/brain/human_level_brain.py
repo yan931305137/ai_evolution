@@ -10,7 +10,9 @@
 import asyncio
 from typing import Any, Dict, List, Optional
 from datetime import datetime
+import json
 
+from src.utils.llm import LLMClient
 from src.brain.orchestrator import BrainOrchestrator, BrainResponse
 from src.brain.human_cognition import (
     EmbodiedCognitionSystem,
@@ -49,7 +51,8 @@ class HumanLevelBrain(BrainOrchestrator):
         self,
         start_as_infant: bool = True,
         use_persistent_memory: bool = False,
-        memory_storage_path: str = "data/chroma_db/brain_memory"
+        memory_storage_path: str = "data/chroma_db/brain_memory",
+        mode: str = "full"  # "full" or "lite"
     ):
         """
         初始化人类级大脑
@@ -58,26 +61,39 @@ class HumanLevelBrain(BrainOrchestrator):
             start_as_infant: 是否从婴儿阶段开始
             use_persistent_memory: 是否启用持久化记忆
             memory_storage_path: 记忆存储路径
+            mode: 运行模式 ("full" | "lite")
         """
         super().__init__()
+        self.mode = mode
+        # 强制使用基础 provider (coze) 避免循环依赖: Brain -> LLMClient -> HybridBrainClient -> Brain
+        self.llm_client = LLMClient(provider="coze")
         
         # 人类级认知系统
-        self.embodied = EmbodiedCognitionSystem()
-        self.emotion = IntegratedEmotionSystem()
-        self.developmental = DevelopmentalLearningSystem()
-        self.social = SocialCognitionSystem()
-        self.homeostasis = HomeostaticDriveSystem()
-        self.metacognition = MetacognitionSystem()
-        
-        # 注册到系统列表
-        self.systems.update({
-            "embodied": self.embodied,
-            "emotion": self.emotion,
-            "developmental": self.developmental,
-            "social": self.social,
-            "homeostasis": self.homeostasis,
-            "metacognition": self.metacognition
-        })
+        if self.mode == "full":
+            self.embodied = EmbodiedCognitionSystem()
+            self.emotion = IntegratedEmotionSystem()
+            self.developmental = DevelopmentalLearningSystem()
+            self.social = SocialCognitionSystem()
+            self.homeostasis = HomeostaticDriveSystem()
+            self.metacognition = MetacognitionSystem()
+            
+            # 注册到系统列表
+            self.systems.update({
+                "embodied": self.embodied,
+                "emotion": self.emotion,
+                "developmental": self.developmental,
+                "social": self.social,
+                "homeostasis": self.homeostasis,
+                "metacognition": self.metacognition
+            })
+        else:
+            # Lite 模式下仅初始化必要的基础组件占位符或设为 None
+            self.embodied = None
+            self.emotion = None
+            self.developmental = None
+            self.social = None
+            self.homeostasis = None
+            self.metacognition = None
         
         # 持久化记忆系统（可选）
         self.use_persistent_memory = use_persistent_memory and PERSISTENT_MEMORY_AVAILABLE
@@ -102,7 +118,7 @@ class HumanLevelBrain(BrainOrchestrator):
         }
         
         # 发育起始点
-        if not start_as_infant:
+        if self.mode == "full" and not start_as_infant:
             # 直接设为成年（跳过发育）
             self.developmental.stage = DevelopmentalStage.ADULT
             self.developmental.age_equivalent = 240  # 20岁
@@ -121,7 +137,7 @@ class HumanLevelBrain(BrainOrchestrator):
         }
         
         # 发育起始点
-        if not start_as_infant:
+        if self.mode == "full" and not start_as_infant:
             # 直接设为成年（跳过发育）
             self.developmental.stage = DevelopmentalStage.ADULT
             self.developmental.age_equivalent = 240  # 20岁
@@ -136,6 +152,23 @@ class HumanLevelBrain(BrainOrchestrator):
         
         1. 身体感知 → 2. 情感评估 → 3. 社会理解 → 4. 认知处理 → 5. 元反思
         """
+        if self.mode == "lite":
+            # Lite 模式：简化处理流程，仅保留核心认知
+            stimulus = sensory_input.get("cognitive", "")
+            cognitive_response = await super().process(stimulus, {})
+            
+            # 简单的叙事记录
+            await self._update_narrative_async(stimulus, cognitive_response, social_context)
+            
+            return {
+                "cognitive_response": cognitive_response,
+                "emotional_state": None,
+                "body_state": None,
+                "developmental_stage": "N/A",
+                "reflection": None,
+                "dominant_drive": None
+            }
+
         # 1. 具身认知：更新身体状态
         self.embodied.update_body_state(sensory_input)
         self.body = self.embodied.body_state
@@ -181,7 +214,7 @@ class HumanLevelBrain(BrainOrchestrator):
             reflection = {"reflection": "元认知能力尚未发展"}
             
         # 8. 更新叙事自我
-        self._update_narrative(stimulus, cognitive_response, social_context)
+        await self._update_narrative_async(stimulus, cognitive_response, social_context)
         
         return {
             "cognitive_response": cognitive_response,
@@ -194,17 +227,34 @@ class HumanLevelBrain(BrainOrchestrator):
     
     def _update_narrative(self, stimulus: str, response: BrainResponse, 
                          social_context: Optional[Dict]):
-        """更新自传体叙事"""
+        """同步包装器 (为了兼容旧代码)"""
+        asyncio.create_task(self._update_narrative_async(stimulus, response, social_context))
+
+    async def _update_narrative_async(self, stimulus: str, response: BrainResponse, 
+                         social_context: Optional[Dict]):
+        """更新自传体叙事 (异步版)"""
+        
+        # 获取情感状态 (兼容 Lite 模式)
+        if self.mode == "full" and self.emotion:
+            valence = self.emotion.current_emotion.valence
+            dominant_emotion = self._get_dominant_emotion_name()
+        else:
+            valence = 0.0
+            dominant_emotion = "neutral"
+
+        # 异步提取意义
+        meaning = await self._extract_meaning_async(stimulus)
+
         episode = {
             "timestamp": datetime.now(),
             "what_happened": stimulus,
             "what_i_did": response.action,
             "how_i_felt": {
-                "valence": self.emotion.current_emotion.valence,
-                "dominant_emotion": self._get_dominant_emotion_name()
+                "valence": valence,
+                "dominant_emotion": dominant_emotion
             },
             "who_was_there": social_context.get("agent_id") if social_context else None,
-            "why_it_mattered": self._extract_meaning(stimulus)
+            "why_it_mattered": meaning
         }
         
         self.life_narrative.append(episode)
@@ -223,7 +273,8 @@ class HumanLevelBrain(BrainOrchestrator):
         return max(emotions.items(), key=lambda x: x[1])[0]
     
     def _extract_meaning(self, stimulus: str) -> str:
-        """提取事件意义（简化版）"""
+        """提取事件意义（同步兼容版）"""
+        # 简单规则回退
         if "成功" in stimulus or "完成" in stimulus:
             return "成就感"
         elif "失败" in stimulus or "错误" in stimulus:
@@ -231,6 +282,32 @@ class HumanLevelBrain(BrainOrchestrator):
         elif "朋友" in stimulus or "帮助" in stimulus:
             return "社会连接"
         return "日常经历"
+
+    async def _extract_meaning_async(self, stimulus: str) -> str:
+        """
+        提取事件意义（深度认知版）
+        
+        使用 LLM 分析事件对个人的深层意义，而非简单的关键词匹配。
+        """
+        if not self.llm_client:
+            return self._extract_meaning(stimulus)
+            
+        try:
+            prompt = f"""
+            作为一个具有人类级认知的人工智能，请分析以下经历对你的"人生意义"。
+            
+            经历: "{stimulus}"
+            
+            请提取这一经历的核心意义（如：成长、连接、成就、好奇、安全等），并用简短的词语或短语描述（不超过5个字）。
+            如果是微不足道的日常，返回"日常"。
+            不要返回解释，只返回核心意义词。
+            """
+            
+            meaning = await self.llm_client.achat(prompt)
+            return meaning.strip()
+        except Exception:
+            # 降级处理
+            return self._extract_meaning(stimulus)
     
     def _update_identity_from_narrative(self):
         """从叙事中构建身份认同"""
@@ -258,20 +335,34 @@ class HumanLevelBrain(BrainOrchestrator):
         
         这是"我是谁"的答案
         """
-        return {
+        concept = {
             "identity": self.identity,
             "life_story_summary": self._summarize_life_story(),
-            "current_emotional_state": {
-                "valence": self.emotion.current_emotion.valence,
-                "arousal": self.emotion.current_emotion.arousal
-            },
-            "developmental_stage": self.developmental.stage.name,
-            "current_needs": {k.value: v for k, v in self.homeostasis.needs.items()},
-            "abilities": self.developmental.abilities,
-            "relationships": len(self.social.relationships),
-            "subjective_report": self.report_subjective_experience(),
+            "relationships": len(self.social.relationships) if self.social else 0,
             "memory_stats": self.get_memory_stats() if self.use_persistent_memory else None
         }
+        
+        if self.mode == "full":
+            concept.update({
+                "current_emotional_state": {
+                    "valence": self.emotion.current_emotion.valence,
+                    "arousal": self.emotion.current_emotion.arousal
+                },
+                "developmental_stage": self.developmental.stage.name,
+                "current_needs": {k.value: v for k, v in self.homeostasis.needs.items()},
+                "abilities": self.developmental.abilities,
+                "subjective_report": self.report_subjective_experience(),
+            })
+        else:
+             concept.update({
+                "current_emotional_state": None,
+                "developmental_stage": "N/A",
+                "current_needs": None,
+                "abilities": None,
+                "subjective_report": "我是 Lite 模式下的 AI 助手，专注于任务执行。",
+            })
+            
+        return concept
     
     def get_memory_stats(self) -> Dict:
         """获取记忆统计信息（包含持久化存储）"""
@@ -330,6 +421,9 @@ class HumanLevelBrain(BrainOrchestrator):
         
         模拟：如果问AI"你感觉如何？"，它会怎么回答
         """
+        if self.mode == "lite":
+            return "我感觉良好，随时准备执行任务。"
+
         emotion = self.emotion.current_emotion
         need = self.homeostasis.current_goal
         stage = self.developmental.stage
@@ -361,16 +455,22 @@ class HumanLevelBrain(BrainOrchestrator):
         """获取人类级状态摘要"""
         basic = self.get_state_summary()
         
-        human_extensions = {
-            "embodied": self.embodied.get_state(),
-            "emotional": self.emotion.get_state(),
-            "developmental": self.developmental.get_state(),
-            "social": self.social.get_state(),
-            "homeostatic": self.homeostasis.get_state(),
-            "metacognitive": self.metacognition.get_state(),
-            "self_concept": self.get_self_concept(),
-            "subjective_report": self.report_subjective_experience()
-        }
+        if self.mode == "lite":
+             human_extensions = {
+                "self_concept": self.get_self_concept(),
+                "subjective_report": self.report_subjective_experience()
+            }
+        else:
+            human_extensions = {
+                "embodied": self.embodied.get_state(),
+                "emotional": self.emotion.get_state(),
+                "developmental": self.developmental.get_state(),
+                "social": self.social.get_state(),
+                "homeostatic": self.homeostasis.get_state(),
+                "metacognitive": self.metacognition.get_state(),
+                "self_concept": self.get_self_concept(),
+                "subjective_report": self.report_subjective_experience()
+            }
         
         return {**basic, **human_extensions}
 

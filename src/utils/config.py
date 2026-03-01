@@ -68,6 +68,9 @@ class Config:
             # Evolution CI/CD Configuration from Environment Variables
             self._load_evolution_cicd_config_from_env()
             
+            # LangSmith Configuration
+            self._load_langsmith_config_from_env()
+            
             # Load additional config files
             self._load_additional_configs()
 
@@ -114,7 +117,24 @@ class Config:
             cicd_config["auto_merge"] = os.getenv("EVOLUTION_CICD_AUTO_MERGE").lower() == "true"
         if os.getenv("EVOLUTION_CICD_WORKFLOW"):
             cicd_config["workflow"] = os.getenv("EVOLUTION_CICD_WORKFLOW")
-    
+            
+    def _load_langsmith_config_from_env(self):
+        """从环境变量加载 LangSmith 配置"""
+        if "langsmith" not in self._config:
+            self._config["langsmith"] = {}
+            
+        langsmith_config = self._config["langsmith"]
+        
+        # LangSmith 环境变量
+        if os.getenv("LANGCHAIN_TRACING_V2"):
+            langsmith_config["tracing"] = os.getenv("LANGCHAIN_TRACING_V2").lower() == "true"
+        if os.getenv("LANGCHAIN_API_KEY"):
+            langsmith_config["api_key"] = os.getenv("LANGCHAIN_API_KEY")
+        if os.getenv("LANGCHAIN_PROJECT"):
+            langsmith_config["project"] = os.getenv("LANGCHAIN_PROJECT")
+        if os.getenv("LANGCHAIN_ENDPOINT"):
+            langsmith_config["endpoint"] = os.getenv("LANGCHAIN_ENDPOINT")
+            
     def _load_additional_configs(self):
         """加载额外的配置文件"""
         additional_configs = [
@@ -180,6 +200,11 @@ class Config:
     @property
     def db_config(self) -> Dict[str, Any]:
         return self.get("database", {})
+
+    @property
+    def langsmith_config(self) -> Dict[str, Any]:
+        """获取 LangSmith 配置"""
+        return self.get("langsmith", {})
 
 # Global instance
 cfg = Config()

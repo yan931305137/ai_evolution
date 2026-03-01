@@ -480,6 +480,19 @@
       ],
       "auto_delete": true,
       "last_verified_at": "2026-03-01T05:17:46.390997"
+    },
+    "doc_27b59059": {
+      "doc_id": "doc_27b59059",
+      "path": "docs/Brain自主处理适配场景清单.md",
+      "title": "Brain自主处理适配场景清单",
+      "task_id": "task_55202cfd",
+      "created_at": "2026-03-01T06:24:47.627590",
+      "ttl_days": -1,
+      "status": "active",
+      "doc_type": "decision",
+      "related_files": [],
+      "auto_delete": false,
+      "last_verified_at": "2026-03-01T06:24:47.627590"
     }
   }
 }

@@ -21,6 +21,27 @@ class WebPageContent:
     quality_score: float
     metadata: Dict[str, Any]
 
+import webbrowser
+
+def open_browser(url: str) -> str:
+    """
+    Open a URL in the system's default web browser.
+    
+    Args:
+        url: The URL to open (e.g., 'https://www.google.com')
+        
+    Returns:
+        Status message indicating success or failure.
+    """
+    try:
+        if not url.startswith(('http://', 'https://')):
+            url = 'https://' + url
+            
+        webbrowser.open(url)
+        return f"Successfully opened browser to: {url}"
+    except Exception as e:
+        return f"Error opening browser: {str(e)}"
+
 def get_weather(location: str = "beijing") -> str:
     """Get current weather report for a location using wttr.in."""
     try:

@@ -222,18 +222,8 @@ def generation_content_compliance_check(
         (校验是否通过, 校验结果详情)
     """
     # 存储路径映射表
-    STORAGE_PATH_RULES = {
-        "code_skill": ["./skills/"],
-        "code_core": ["./core/"],
-        "code_script": ["./scripts/"],
-        "code_test": ["./tests/"],
-        "data_system": ["./data/"],
-        "data_training": ["./training/"],
-        "output_report": ["./reports/"],
-        "output_temp": ["./tmp/"],
-        "doc": ["./docs/"],
-        "design": ["./brain/docs/", "./docs/design/"]
-    }
+    # 优先从 src.utils.compliance_check 导入以保持一致性
+    from src.utils.compliance_check import STORAGE_PATH_RULES
     
     result = {
         "path_compliance": False,

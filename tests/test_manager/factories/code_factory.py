@@ -304,6 +304,7 @@ if item in large_set:  # O(1)
             HTML 代码
         """
         elements = elements or ["<h1>标题</h1>", "<p>段落内容</p>", "<button>按钮</button>"]
+        joined_elements = "\n    ".join(elements)
         
         return f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -317,7 +318,7 @@ if item in large_set:  # O(1)
     </style>
 </head>
 <body>
-    {"\n    ".join(elements)}
+    {joined_elements}
     <script>
         console.log('Page loaded');
     </script>
@@ -345,6 +346,7 @@ if item in large_set:  # O(1)
             'mkdir -p output',
             'echo "Done"'
         ]
+        joined_ops = "\n\n".join(operations)
         
         return f"""#!/bin/bash
 # {name}.sh
@@ -356,7 +358,7 @@ echo "================================"
 echo "Running {name}"
 echo "================================"
 
-{"\n\n".join(operations)}
+{joined_ops}
 
 echo "================================"
 echo "Script completed successfully!"

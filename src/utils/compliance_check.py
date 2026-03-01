@@ -64,6 +64,12 @@ def generation_content_compliance_check(file_path: str, content_type: str, is_te
         result["suggestion"] = "请选择合法的内容类型"
         return False, result
     
+    # 智能推断与建议：如果文件名包含 test_ 或 _test，但类型不是 code_test，则给予警告
+    file_name = Path(file_path).name
+    if ("test_" in file_name or "_test" in file_name) and content_type != "code_test" and not is_temporary_resource:
+        result["violation_details"].append(f"检测到可能是测试文件 ({file_name})，建议使用 code_test 类型并存放在 ./tests/ 目录下")
+        # 不强制失败，仅警告，除非路径确实不符合当前类型规则
+    
     legal_path_prefixes = STORAGE_PATH_RULES[content_type]
     path_compliant = any(Path(file_path).is_relative_to(Path(prefix)) for prefix in legal_path_prefixes)
     temp_tag_compliant = True  # 初始化临时资源标记校验结果
