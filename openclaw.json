@@ -8,6 +8,42 @@
   "gateway": {
     "mode": "local"
   },
+  "brain": {
+    "enabled": true,
+    "mode": "full",
+    "use_persistent_memory": true,
+    "start_as_infant": false,
+    "enhanced_features": {
+      "extended_knowledge_base": true,
+      "knowledge_graph": true,
+      "reinforcement_learning": true,
+      "self_evolution": true
+    },
+    "local_processing": {
+      "enable_l1_template": true,
+      "enable_l2_rules": true,
+      "enable_l3_semantic": true,
+      "enable_l4_inference": true,
+      "llm_fallback_threshold": 0.7
+    },
+    "learning": {
+      "enable_experience_learning": true,
+      "learning_rate": 0.1,
+      "epsilon": 0.1,
+      "adaptation_speed": "normal"
+    },
+    "memory": {
+      "short_term_capacity": 100,
+      "long_term_storage": "chroma_db",
+      "memory_retrieval_k": 5,
+      "knowledge_graph_path": "data/brain/knowledge_graph.json"
+    },
+    "monitoring": {
+      "enable_metrics": true,
+      "export_prometheus": true,
+      "log_level": "info"
+    }
+  },
   "meta": {
     "lastTouchedVersion": "2026.2.26",
     "lastTouchedAt": "2026-02-28T21:21:19.146Z"

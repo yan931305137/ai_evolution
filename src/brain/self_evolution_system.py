@@ -325,7 +325,7 @@ class SelfEvolutionEngine:
                 id=str(uuid.uuid4())[:8],
                 improvement_type=ImprovementType.STRATEGY,
                 description="增加策略多样性",
-                rationale=failure_analysis="检测到重复使用无效策略",
+                rationale="检测到重复使用无效策略",
                 target_component="strategy_library",
                 proposed_change={"exploration_rate": 0.3},
                 expected_benefit=0.2,

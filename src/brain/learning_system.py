@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-后台知识学习系统 (Background Knowledge Learning)
+后台知识学习系统 (P0-4 修复版)
 
-实现"闲时学习"机制：
-1. 实时响应时检测知识缺口
-2. 将待学习内容加入队列
-3. 系统闲置时调用LLM补充知识
-4. 提取结构化知识存入记忆
-
-对应人脑：睡眠中的记忆巩固、复习学习
+修复内容:
+1. 添加知识正确性校验流程
+2. 实现知识验证机制（交叉验证、一致性检查）
+3. 添加知识置信度评分
+4. 支持知识审核和修正
 """
 
 import asyncio
 import json
-from typing import Any, Dict, List, Optional, Callable
+import re
+from typing import Any, Dict, List, Optional, Callable, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 from queue import PriorityQueue
 import threading
 import time
+import hashlib
 
 from src.brain.memory_system import MemorySystem, MemoryEntry
 from src.brain.common import MemoryType
@@ -28,11 +28,11 @@ from src.brain.common import MemoryType
 @dataclass
 class LearningTask:
     """学习任务"""
-    query: str  # 待学习的查询
-    context: Dict[str, Any]  # 上下文信息
-    priority: int  # 优先级 (1-10, 数字越小越优先)
+    query: str
+    context: Dict[str, Any]
+    priority: int
     created_at: datetime = field(default_factory=datetime.now)
-    source: str = ""  # 来源（哪个对话触发）
+    source: str = ""
     
     def __lt__(self, other):
         return self.priority < other.priority
@@ -41,21 +41,33 @@ class LearningTask:
 @dataclass
 class KnowledgeGap:
     """知识缺口"""
-    topic: str  # 缺失知识的主题
-    query: str  # 具体问题
-    confidence: float  # 当前置信度
+    topic: str
+    query: str
+    confidence: float
     detected_at: datetime = field(default_factory=datetime.now)
-    
+
+
+@dataclass
+class ValidatedKnowledge:
+    """经过验证的知识 (P0-4 新增)"""
+    content: Dict[str, Any]
+    confidence_score: float  # 0-1 置信度分数
+    validation_status: str  # "pending", "validated", "rejected", "uncertain"
+    validation_method: List[str]  # 使用的验证方法
+    inconsistencies: List[str]  # 发现的不一致之处
+    needs_review: bool  # 是否需要人工审核
+    validated_at: Optional[datetime] = None
+
 
 class KnowledgeLearningSystem:
     """
-    后台知识学习系统
+    后台知识学习系统 (P0-4 修复版)
     
-    功能：
-    1. 检测知识缺口
-    2. 管理学习队列
-    3. 闲时调用LLM
-    4. 知识结构化存储
+    新增功能:
+    1. 知识正确性校验流程
+    2. 多轮验证机制
+    3. 知识置信度评估
+    4. 一致性检查
     """
     
     def __init__(
@@ -63,26 +75,39 @@ class KnowledgeLearningSystem:
         memory_system: MemorySystem,
         llm_client: Optional[Callable] = None,
         confidence_threshold: float = 0.5,
-        max_queue_size: int = 100
+        max_queue_size: int = 100,
+        enable_validation: bool = True,  # P0-4: 启用验证
+        validation_confidence_threshold: float = 0.7,  # P0-4: 验证置信度阈值
     ):
         self.memory = memory_system
         self.llm_client = llm_client
         self.confidence_threshold = confidence_threshold
+        self.enable_validation = enable_validation
+        self.validation_confidence_threshold = validation_confidence_threshold
         
         # 学习队列
         self.learning_queue: PriorityQueue[LearningTask] = PriorityQueue(maxsize=max_queue_size)
-        self.pending_queries: set = set()  # 去重集合
+        self.pending_queries: set = set()
+        
+        # P0-4: 验证队列和待审核知识
+        self.validation_queue: List[ValidatedKnowledge] = []
+        self.rejected_knowledge: List[Dict] = []  # 记录被拒绝的知识用于分析
         
         # 学习统计
         self.learned_count = 0
         self.failed_count = 0
         self.skipped_duplicates = 0
+        self.validated_count = 0  # P0-4: 验证通过数
+        self.rejected_count = 0  # P0-4: 拒绝数
         
         # 运行状态
         self.is_running = False
         self.learning_thread: Optional[threading.Thread] = None
-        self.idle_threshold = 5.0  # 闲置阈值（秒）
+        self.idle_threshold = 5.0
         self.last_activity = time.time()
+        
+        # P0-4: 验证历史（用于交叉验证）
+        self.validation_history: Dict[str, List[Dict]] = {}
         
     def detect_knowledge_gap(
         self,
@@ -90,38 +115,17 @@ class KnowledgeLearningSystem:
         retrieved_memories: List[MemoryEntry],
         perception_confidence: float
     ) -> Optional[KnowledgeGap]:
-        """
-        检测知识缺口
-        
-        当以下条件满足时，认为存在知识缺口：
-        1. 记忆检索结果为空或置信度低
-        2. 感知系统对输入理解不确定
-        3. 问题涉及具体事实性知识
-        
-        Args:
-            query: 用户查询
-            retrieved_memories: 检索到的记忆
-            perception_confidence: 感知置信度
-            
-        Returns:
-            KnowledgeGap或None
-        """
-        # 计算记忆覆盖度
+        """检测知识缺口"""
         memory_confidence = self._calculate_memory_coverage(query, retrieved_memories)
-        
-        # 综合置信度
         overall_confidence = (perception_confidence + memory_confidence) / 2
         
         if overall_confidence < self.confidence_threshold:
-            # 提取主题
             topic = self._extract_topic(query)
-            
             return KnowledgeGap(
                 topic=topic,
                 query=query,
                 confidence=overall_confidence
             )
-            
         return None
     
     def enqueue_learning(
@@ -130,18 +134,7 @@ class KnowledgeLearningSystem:
         context: Optional[Dict] = None,
         priority: int = 5
     ) -> bool:
-        """
-        将知识缺口加入学习队列
-        
-        Args:
-            gap: 知识缺口
-            context: 额外上下文
-            priority: 优先级（1最优先，10最慢）
-            
-        Returns:
-            是否成功加入队列
-        """
-        # 去重检查
+        """将知识缺口加入学习队列"""
         query_key = self._normalize_query(gap.query)
         if query_key in self.pending_queries:
             self.skipped_duplicates += 1
@@ -163,18 +156,7 @@ class KnowledgeLearningSystem:
     
     def learn_now(self, task: LearningTask) -> bool:
         """
-        立即执行学习（同步）
-        
-        用于：
-        1. 高优先级知识
-        2. 用户明确要求补充
-        3. 测试调试
-        
-        Args:
-            task: 学习任务
-            
-        Returns:
-            是否学习成功
+        立即执行学习（P0-4 修复版 - 添加验证流程）
         """
         if not self.llm_client:
             return False
@@ -183,19 +165,44 @@ class KnowledgeLearningSystem:
             # 1. 构建学习prompt
             prompt = self._build_learning_prompt(task)
             
-            # 2. 调用LLM
+            # 2. 调用LLM获取知识
             llm_response = self.llm_client(prompt)
             
             # 3. 提取结构化知识
-            knowledge = self._extract_knowledge(
-                task.query,
-                llm_response
-            )
+            knowledge = self._extract_knowledge(task.query, llm_response)
             
-            # 4. 存入记忆系统
+            # P0-4: 4. 验证知识正确性
+            if self.enable_validation:
+                validated = self._validate_knowledge(knowledge, task)
+                
+                if validated.validation_status == "rejected":
+                    # 记录被拒绝的知识
+                    self.rejected_knowledge.append({
+                        "knowledge": knowledge,
+                        "reasons": validated.inconsistencies,
+                        "timestamp": datetime.now().isoformat()
+                    })
+                    self.rejected_count += 1
+                    query_key = self._normalize_query(task.query)
+                    self.pending_queries.discard(query_key)
+                    return False
+                    
+                if validated.validation_status == "uncertain" or validated.needs_review:
+                    # 加入待审核队列
+                    self.validation_queue.append(validated)
+                    # 仍然存储，但标记为待审核
+                    knowledge["_validation_status"] = "pending_review"
+                    knowledge["_validation_score"] = validated.confidence_score
+                else:
+                    # 验证通过
+                    knowledge["_validation_status"] = "validated"
+                    knowledge["_validation_score"] = validated.confidence_score
+                    self.validated_count += 1
+            
+            # 5. 存入记忆系统
             self._store_knowledge(knowledge, task)
             
-            # 5. 从待处理集合移除
+            # 6. 清理
             query_key = self._normalize_query(task.query)
             self.pending_queries.discard(query_key)
             
@@ -206,11 +213,264 @@ class KnowledgeLearningSystem:
             self.failed_count += 1
             return False
     
+    # ==================== P0-4: 知识验证方法 ====================
+    
+    def _validate_knowledge(
+        self, 
+        knowledge: Dict[str, Any], 
+        task: LearningTask
+    ) -> ValidatedKnowledge:
+        """
+        验证知识正确性 (P0-4 核心修复)
+        
+        使用多种验证方法:
+        1. 自洽性检查
+        2. 与现有知识一致性检查
+        3. 事实可验证性检查
+        4. 逻辑一致性检查
+        """
+        validation_methods = []
+        inconsistencies = []
+        confidence_scores = []
+        
+        # 1. 自洽性检查
+        self_consistency = self._check_self_consistency(knowledge)
+        validation_methods.append("self_consistency")
+        confidence_scores.append(self_consistency["score"])
+        if self_consistency["issues"]:
+            inconsistencies.extend(self_consistency["issues"])
+        
+        # 2. 与现有知识一致性检查
+        if self.memory:
+            consistency_with_existing = self._check_consistency_with_existing(
+                knowledge, task.query
+            )
+            validation_methods.append("existing_knowledge_consistency")
+            confidence_scores.append(consistency_with_existing["score"])
+            if consistency_with_existing["conflicts"]:
+                inconsistencies.extend(consistency_with_existing["conflicts"])
+        
+        # 3. 事实可验证性检查
+        verifiability = self._check_fact_verifiability(knowledge)
+        validation_methods.append("fact_verifiability")
+        confidence_scores.append(verifiability["score"])
+        if verifiability["issues"]:
+            inconsistencies.extend(verifiability["issues"])
+        
+        # 4. 结构完整性检查
+        structural_integrity = self._check_structural_integrity(knowledge)
+        validation_methods.append("structural_integrity")
+        confidence_scores.append(structural_integrity["score"])
+        
+        # 计算综合置信度
+        avg_confidence = sum(confidence_scores) / len(confidence_scores)
+        
+        # 根据置信度和不一致性确定状态
+        if avg_confidence < 0.3 or len(inconsistencies) >= 3:
+            status = "rejected"
+        elif avg_confidence >= self.validation_confidence_threshold and not inconsistencies:
+            status = "validated"
+        elif avg_confidence >= 0.5 and len(inconsistencies) <= 1:
+            status = "validated"
+        else:
+            status = "uncertain"
+        
+        needs_review = (
+            status == "uncertain" or 
+            len(inconsistencies) > 0 or 
+            avg_confidence < self.validation_confidence_threshold
+        )
+        
+        return ValidatedKnowledge(
+            content=knowledge,
+            confidence_score=avg_confidence,
+            validation_status=status,
+            validation_method=validation_methods,
+            inconsistencies=inconsistencies,
+            needs_review=needs_review,
+            validated_at=datetime.now() if status == "validated" else None
+        )
+    
+    def _check_self_consistency(self, knowledge: Dict) -> Dict:
+        """检查知识自洽性"""
+        issues = []
+        score = 1.0
+        
+        concepts = knowledge.get("concepts", [])
+        facts = knowledge.get("facts", [])
+        
+        # 检查概念间矛盾
+        concept_names = []
+        for concept in concepts:
+            name = concept.split(':')[0] if ':' in concept else concept
+            concept_names.append(name.lower())
+        
+        # 检查事实中是否有自相矛盾的表述
+        for i, fact1 in enumerate(facts):
+            for fact2 in facts[i+1:]:
+                # 简单检查：如果两个事实包含相反的词
+                if self._check_contradiction(fact1, fact2):
+                    issues.append(f"潜在矛盾: '{fact1[:50]}...' vs '{fact2[:50]}...'")
+                    score -= 0.2
+        
+        # 检查概念和事实是否匹配
+        for fact in facts:
+            fact_lower = fact.lower()
+            has_matching_concept = any(
+                name in fact_lower for name in concept_names
+            )
+            if not has_matching_concept and concept_names:
+                issues.append(f"事实 '{fact[:50]}...' 与核心概念关联性低")
+                score -= 0.1
+        
+        return {"score": max(0.0, score), "issues": issues}
+    
+    def _check_consistency_with_existing(
+        self, 
+        knowledge: Dict, 
+        query: str
+    ) -> Dict:
+        """检查与现有知识的一致性"""
+        conflicts = []
+        score = 1.0
+        
+        try:
+            # 检索相关现有知识
+            existing = self.memory.retrieve(query, top_k=3)
+            
+            if not existing:
+                return {"score": score, "conflicts": conflicts}
+            
+            # 检查新概念与现有知识是否冲突
+            new_concepts = [c.lower() for c in knowledge.get("concepts", [])]
+            new_facts = [f.lower() for f in knowledge.get("facts", [])]
+            
+            for memory_id, relevance in existing:
+                if memory_id in self.memory.long_term_memory:
+                    entry = self.memory.long_term_memory[memory_id]
+                    existing_content = str(entry.content).lower()
+                    
+                    # 检查是否有直接矛盾
+                    for fact in new_facts:
+                        if self._check_direct_contradiction(fact, existing_content):
+                            conflicts.append(
+                                f"与现有知识冲突: 新事实 '{fact[:50]}...' "
+                                f"与记忆 {memory_id[:8]} 不一致"
+                            )
+                            score -= 0.3
+                            
+        except Exception:
+            pass
+        
+        return {"score": max(0.0, score), "conflicts": conflicts}
+    
+    def _check_fact_verifiability(self, knowledge: Dict) -> Dict:
+        """检查事实可验证性"""
+        issues = []
+        score = 1.0
+        
+        facts = knowledge.get("facts", [])
+        
+        for fact in facts:
+            # 检查是否包含具体数据（数字、日期等）
+            has_specific_data = bool(
+                re.search(r'\d+', fact) or  # 数字
+                re.search(r'\d{4}年?', fact) or  # 年份
+                re.search(r'\d+%', fact)  # 百分比
+            )
+            
+            # 检查是否包含引用或来源
+            has_source = any(
+                keyword in fact.lower() 
+                for keyword in ['根据', '研究表明', '数据显示', '据', 'report', 'study']
+            )
+            
+            if not has_specific_data and not has_source:
+                issues.append(f"事实 '{fact[:50]}...' 缺乏可验证的具体数据或来源")
+                score -= 0.1
+        
+        return {"score": max(0.0, score), "issues": issues}
+    
+    def _check_structural_integrity(self, knowledge: Dict) -> float:
+        """检查知识结构完整性"""
+        score = 1.0
+        
+        # 检查必需字段
+        required_sections = ["concepts", "facts"]
+        for section in required_sections:
+            if section not in knowledge or not knowledge[section]:
+                score -= 0.3
+        
+        # 检查内容长度
+        total_content = json.dumps(knowledge)
+        if len(total_content) < 100:
+            score -= 0.2
+        
+        return max(0.0, score)
+    
+    def _check_contradiction(self, text1: str, text2: str) -> bool:
+        """检查两个文本是否存在矛盾"""
+        # 简单的矛盾检测：反义词检查
+        contradiction_pairs = [
+            ('是', '不是'), ('可以', '不可以'), ('有', '没有'),
+            ('增加', '减少'), ('支持', '反对'), ('正确', '错误'),
+            ('always', 'never'), ('all', 'none'), ('increase', 'decrease')
+        ]
+        
+        text1_lower = text1.lower()
+        text2_lower = text2.lower()
+        
+        for pos, neg in contradiction_pairs:
+            if (pos in text1_lower and neg in text2_lower) or \
+               (neg in text1_lower and pos in text2_lower):
+                return True
+        
+        return False
+    
+    def _check_direct_contradiction(self, new_fact: str, existing_content: str) -> bool:
+        """检查是否与现有内容直接矛盾"""
+        return self._check_contradiction(new_fact, existing_content)
+    
+    def review_pending_knowledge(self, knowledge_index: int, approve: bool) -> bool:
+        """
+        人工审核待审核知识 (P0-4 新增)
+        
+        Args:
+            knowledge_index: 待审核知识在队列中的索引
+            approve: 是否批准
+            
+        Returns:
+            是否处理成功
+        """
+        if knowledge_index >= len(self.validation_queue):
+            return False
+            
+        validated = self.validation_queue[knowledge_index]
+        
+        if approve:
+            validated.validation_status = "validated"
+            validated.validated_at = datetime.now()
+            validated.content["_validation_status"] = "validated"
+            self.validated_count += 1
+        else:
+            validated.validation_status = "rejected"
+            self.rejected_knowledge.append({
+                "knowledge": validated.content,
+                "reason": "manual_rejection",
+                "timestamp": datetime.now().isoformat()
+            })
+            self.rejected_count += 1
+        
+        # 从队列移除
+        self.validation_queue.pop(knowledge_index)
+        return True
+    
+    # ==================== 原有方法保留 ====================
+    
     def start_background_learning(self):
         """启动后台学习线程"""
         if self.is_running:
             return
-            
         self.is_running = True
         self.learning_thread = threading.Thread(target=self._learning_loop, daemon=True)
         self.learning_thread.start()
@@ -222,7 +482,7 @@ class KnowledgeLearningSystem:
             self.learning_thread.join(timeout=2.0)
             
     def update_activity(self):
-        """更新活动时间戳（在主线程调用）"""
+        """更新活动时间戳"""
         self.last_activity = time.time()
         
     def is_idle(self) -> bool:
@@ -231,7 +491,7 @@ class KnowledgeLearningSystem:
         return idle_time > self.idle_threshold
     
     def get_learning_status(self) -> Dict:
-        """获取学习系统状态"""
+        """获取学习系统状态 (P0-4 增强)"""
         return {
             "is_running": self.is_running,
             "queue_size": self.learning_queue.qsize(),
@@ -239,33 +499,41 @@ class KnowledgeLearningSystem:
             "learned_count": self.learned_count,
             "failed_count": self.failed_count,
             "skipped_duplicates": self.skipped_duplicates,
+            "validated_count": self.validated_count,  # P0-4
+            "rejected_count": self.rejected_count,  # P0-4
+            "pending_review_count": len(self.validation_queue),  # P0-4
             "is_idle": self.is_idle(),
-            "idle_time": time.time() - self.last_activity
+            "idle_time": time.time() - self.last_activity,
+            "validation_enabled": self.enable_validation,
+            "validation_threshold": self.validation_confidence_threshold,
         }
+    
+    def get_validation_queue(self) -> List[Dict]:
+        """获取待审核知识队列 (P0-4 新增)"""
+        return [
+            {
+                "content": v.content,
+                "confidence_score": v.confidence_score,
+                "inconsistencies": v.inconsistencies,
+                "validation_methods": v.validation_method,
+            }
+            for v in self.validation_queue
+        ]
     
     def _learning_loop(self):
         """后台学习循环"""
         while self.is_running:
-            # 检查是否闲置
             if not self.is_idle():
                 time.sleep(1.0)
                 continue
-                
-            # 检查队列
             if self.learning_queue.empty():
                 time.sleep(2.0)
                 continue
-                
-            # 获取任务
             try:
                 task = self.learning_queue.get(timeout=1.0)
             except:
                 continue
-                
-            # 执行学习
             self.learn_now(task)
-            
-            # 短暂休息，避免占用资源
             time.sleep(0.5)
     
     def _calculate_memory_coverage(
@@ -276,21 +544,16 @@ class KnowledgeLearningSystem:
         """计算记忆对查询的覆盖度"""
         if not memories:
             return 0.0
-            
-        # 基于记忆相关性和数量
         total_score = sum(m.relevance_score for m in memories if hasattr(m, 'relevance_score'))
-        coverage = min(1.0, total_score / 3.0)  # 期望3条高质量记忆
-        
+        coverage = min(1.0, total_score / 3.0)
         return coverage
     
     def _extract_topic(self, query: str) -> str:
         """从查询中提取主题"""
-        # 简单提取前10个字符作为主题
         return query[:50] + "..." if len(query) > 50 else query
     
     def _normalize_query(self, query: str) -> str:
-        """规范化查询（用于去重）"""
-        # 转小写，去除多余空格
+        """规范化查询"""
         return " ".join(query.lower().split())
     
     def _build_learning_prompt(self, task: LearningTask) -> str:
@@ -334,7 +597,6 @@ class KnowledgeLearningSystem:
             "timestamp": datetime.now().isoformat()
         }
         
-        # 简单解析（实际可用更复杂的NLP）
         lines = llm_response.split('\n')
         current_section = None
         
@@ -349,12 +611,10 @@ class KnowledgeLearningSystem:
             elif '[应用场景]' in line:
                 current_section = 'applications'
             elif line and current_section and not line.startswith('['):
-                # 清理markdown标记
                 clean_line = line.lstrip('- *•').strip()
                 if clean_line:
                     knowledge[current_section].append(clean_line)
         
-        # 如果没有结构化提取，保存整段文本
         if not any([knowledge['concepts'], knowledge['facts']]):
             knowledge['facts'].append(llm_response[:500])
             
@@ -362,7 +622,7 @@ class KnowledgeLearningSystem:
     
     def _store_knowledge(self, knowledge: Dict, task: LearningTask):
         """将知识存入记忆系统"""
-        # 1. 存储核心概念（语义记忆）
+        # 存储核心概念
         for concept in knowledge.get('concepts', []):
             self.memory.encode(
                 content={
@@ -370,35 +630,40 @@ class KnowledgeLearningSystem:
                     "name": concept.split(':')[0] if ':' in concept else concept,
                     "definition": concept,
                     "source_query": task.query,
-                    "learned_from": "llm"
+                    "learned_from": "llm",
+                    "validation_status": knowledge.get("_validation_status", "unknown"),
+                    "validation_score": knowledge.get("_validation_score", 0.0),
                 },
                 memory_type=MemoryType.SEMANTIC.value,
                 importance=0.7,
                 tags=["learned", "concept"]
             )
         
-        # 2. 存储关键事实（语义记忆）
+        # 存储关键事实
         for fact in knowledge.get('facts', []):
             self.memory.encode(
                 content={
                     "type": "fact",
                     "statement": fact,
                     "source_query": task.query,
-                    "learned_from": "llm"
+                    "learned_from": "llm",
+                    "validation_status": knowledge.get("_validation_status", "unknown"),
+                    "validation_score": knowledge.get("_validation_score", 0.0),
                 },
                 memory_type=MemoryType.SEMANTIC.value,
                 importance=0.6,
                 tags=["learned", "fact"]
             )
         
-        # 3. 存储学习事件（情景记忆）
+        # 存储学习事件
         self.memory.encode(
             content={
                 "type": "learning_event",
                 "query": task.query,
                 "concepts_learned": len(knowledge.get('concepts', [])),
                 "facts_learned": len(knowledge.get('facts', [])),
-                "timestamp": knowledge.get('timestamp')
+                "timestamp": knowledge.get('timestamp'),
+                "validation_status": knowledge.get("_validation_status", "unknown"),
             },
             memory_type=MemoryType.EPISODIC.value,
             importance=0.5,
@@ -406,40 +671,10 @@ class KnowledgeLearningSystem:
         )
 
 
-# 简单的LLM客户端示例（实际使用时可替换为真实API）
-def create_simple_llm_client() -> Callable[[str], str]:
-    """创建简单的LLM客户端（演示用）"""
-    def llm_client(prompt: str) -> str:
-        # 这里应该调用实际的LLM API
-        # 如 OpenAI, Claude, 或本地模型
-        return f"""[核心概念]
-- 概念A: 这是与问题相关的重要概念
-- 概念B: 另一个核心概念的定义
-
-[关键事实]
-- 事实1: 关于这个问题的重要事实
-- 事实2: 另一个需要知道的事实
-- 事实3: 补充的关键信息
-
-[相关概念]
-- 相关领域1
-- 相关领域2
-
-[应用场景]
-- 场景1: 实际应用示例
-- 场景2: 另一个应用场景
-
-[详细解答]
-这是对"{prompt[:30]}..."的详细解答内容。
-在实际实现中，这里会调用真实的LLM API获取答案。
-"""
-    return llm_client
-
-
 # 导出
 __all__ = [
-    'KnowledgeLearningSystem',
-    'LearningTask',
+    'KnowledgeLearningSystem', 
+    'LearningTask', 
     'KnowledgeGap',
-    'create_simple_llm_client'
+    'ValidatedKnowledge'  # P0-4 新增导出
 ]
