@@ -41,12 +41,13 @@ class LLMClient:
         try:
             from src.utils.config import cfg
             if not provider:
-                provider = cfg.llm_provider
+                # 显式读取环境变量，确保优先级
+                provider = os.getenv("LLM_PROVIDER") or cfg.llm_provider
             self._config = cfg.llm_config
         except Exception:
             self._config = {}
         
-        self.provider = provider or os.getenv("LLM_PROVIDER", "coze")
+        self.provider = provider or "coze"
         
         # Brain模式：使用人类级大脑
         if self.provider == "brain":
@@ -67,8 +68,8 @@ class LLMClient:
         else:
             # Default to Coze
             self.api_key = api_key or os.getenv("COZE_WORKLOAD_IDENTITY_API_KEY") or self._config.get("api_key")
-            self.base_url = base_url or os.getenv("COZE_INTEGRATION_MODEL_BASE_URL") or self._config.get("base_url")
-            self.model_name = model_name or os.getenv("COZE_MODEL_NAME") or self._config.get("model_name", "doubao-seed-2-0-pro-260215")
+            self.base_url = base_url or os.getenv("COZE_INTEGRATION_MODEL_BASE_URL") or self._config.get("base_url", "https://api.coze.cn/open_api/v2")
+            self.model_name = model_name or os.getenv("COZE_MODEL") or self._config.get("model_name", "doubao-seed-2-0-pro-260215")
             extra_body = {"thinking": {"type": "enabled"}}
             default_headers_config = default_headers(new_context(method="chat")) if COZE_UTILS_AVAILABLE else None
         

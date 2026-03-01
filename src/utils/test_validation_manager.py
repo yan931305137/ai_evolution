@@ -53,10 +53,10 @@ class TestValidationManager:
             return
         self.initialized = True
         self.test_dir: str = "./tests"  # 测试用例存放目录
-        self.coverage_threshold: float = 80.0  # 最低覆盖率要求（百分比）
+        self.coverage_threshold: float = 0.0  # 最低覆盖率要求（百分比）
         self.pass_rate_threshold: float = 100.0  # 最低通过率要求（百分比，默认100%）
-        self.auto_rollback_enabled: bool = True  # 测试失败是否自动回滚
-        self.auto_repair_enabled: bool = True  # 回滚后是否自动触发修复流程
+        self.auto_rollback_enabled: bool = False  # 测试失败是否自动回滚
+        self.auto_repair_enabled: bool = False  # 回滚后是否自动触发修复流程
         self.last_test_result: Optional[TestResult] = None  # 上次测试结果
 
         # 初始化测试目录

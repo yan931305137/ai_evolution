@@ -428,7 +428,8 @@ def computer_use(task: str, max_steps: int = 20, llm: Optional[LLMClient] = None
 
 # 示例使用
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    from src.utils.logger import setup_logger
+    setup_logger()
     
     # 示例任务
     task = "打开浏览器，访问百度搜索'OpenClaw'，然后截图保存结果"

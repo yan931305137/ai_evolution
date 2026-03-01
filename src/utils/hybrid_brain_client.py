@@ -80,9 +80,15 @@ class HybridBrainClient:
         
         # 初始化LLM（表达者）- 使用非brain的provider
         llm_provider = llm_provider or self._detect_llm_provider()
-        if llm_provider == "brain" or llm_provider == "hybrid":
-            # 避免递归，默认使用coze
-            llm_provider = "coze"
+        if llm_provider in ["brain", "hybrid", "human_level_brain"]:
+            # 避免递归，检测可用的基础模型
+            import os
+            if os.getenv("VOLC_ACCESSKEY") or os.getenv("ARK_API_KEY"):
+                llm_provider = "ark"
+            elif os.getenv("COZE_API_KEY"):
+                llm_provider = "coze"
+            else:
+                llm_provider = "coze"
         
         self.llm = LLMClient(provider=llm_provider)
         self.llm_provider = llm_provider
@@ -97,8 +103,15 @@ class HybridBrainClient:
         """检测可用的LLM提供商"""
         import os
         
-        # 优先级：COZE_API_KEY > OPENAI_API_KEY > DEEPSEEK_API_KEY
-        if os.getenv("COZE_API_KEY"):
+        # 1. 优先读取 LLM_PROVIDER，只要不是 hybrid/brain
+        env_provider = os.getenv("LLM_PROVIDER")
+        if env_provider and env_provider not in ["hybrid", "brain", "human_level_brain"]:
+            return env_provider
+            
+        # 2. 自动检测 Key (优先级：ARK > COZE > OPENAI > DEEPSEEK)
+        if os.getenv("VOLC_ACCESSKEY") or os.getenv("ARK_API_KEY"):
+            return "ark"
+        elif os.getenv("COZE_API_KEY"):
             return "coze"
         elif os.getenv("OPENAI_API_KEY"):
             return "openai"

@@ -5,6 +5,10 @@ import logging
 # Add project root to sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from src.utils.logger import setup_logger
+# 初始化日志系统
+logger = setup_logger()
+
 from typing import List, Dict
 from datetime import datetime
 from rich.console import Console
@@ -87,16 +91,12 @@ def core_smoke_test():
 # Initialize Rich Console
 console = Console()
 
-def setup_logging():
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
 def load_environment():
     load_dotenv()
     cfg.load()
     
 def main():
     """Main entry point for OpenClaw-Local CLI."""
-    setup_logging()
     load_environment()
     
     # 解析命令行参数

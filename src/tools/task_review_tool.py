@@ -12,10 +12,10 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 from collections import defaultdict
 import logging
+from src.utils.logger import setup_logger
 
 # 配置日志
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+logger = setup_logger(name="TaskExecutionReview")
 
 class TaskExecutionReviewTool:
     def __init__(self, log_data_path: str = "./data/near_3month_runtime_data.json"):

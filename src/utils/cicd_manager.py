@@ -3,7 +3,9 @@ CI/CD 平台管理器
 支持 GitHub 和 Gitee 双平台切换
 """
 import os
-import logging
+from src.utils.logger import setup_logger
+
+logger = setup_logger(name="CICDManager")
 from enum import Enum
 from typing import Dict, Optional, Any, Literal
 from dataclasses import dataclass
@@ -65,7 +67,7 @@ class CICDManager:
         Args:
             config_path: 配置文件路径，默认从环境变量检测
         """
-        self.logger = logging.getLogger(__name__)
+        self.logger = logger
         
         # 检测当前平台
         self.platform = self._detect_platform()
@@ -441,8 +443,9 @@ def switch_cicd_platform(platform: Literal["github", "gitee"]):
 # 命令行接口
 if __name__ == "__main__":
     import sys
+    from src.utils.logger import setup_logger
     
-    logging.basicConfig(level=logging.INFO)
+    setup_logger()
     
     if len(sys.argv) < 2:
         print("用法: python -m src.utils.cicd_manager <命令> [参数]")

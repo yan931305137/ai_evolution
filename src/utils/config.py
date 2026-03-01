@@ -4,8 +4,14 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 from dotenv import load_dotenv
 
+import logging
+
 # Load environment variables from .env file
 load_dotenv()
+
+# Initialize logger (using getLogger to avoid circular dependency if setup_logger is used)
+# Note: Logger setup should happen in the main entry point
+logger = logging.getLogger(__name__)
 
 # Disable ChromaDB Telemetry to prevent timeouts
 os.environ["ANONYMIZED_TELEMETRY"] = "False"
@@ -155,9 +161,9 @@ class Config:
                         if additional_config:
                             # 合并配置
                             self._deep_merge(self._config, additional_config)
-                            print(f"[Config] Loaded additional config: {config_file}")
+                            logger.info(f"[Config] Loaded additional config: {config_file}")
                 except Exception as e:
-                    print(f"[Config] Warning: Failed to load {config_file}: {e}")
+                    logger.warning(f"[Config] Warning: Failed to load {config_file}: {e}")
     
     def _deep_merge(self, base: dict, override: dict) -> dict:
         """深度合并两个字典"""
@@ -190,6 +196,10 @@ class Config:
     @property
     def llm_provider(self) -> str:
         """获取LLM提供商"""
+        # 环境变量优先级最高
+        env_provider = os.getenv("LLM_PROVIDER")
+        if env_provider:
+            return env_provider
         return self.get("llm.provider", "coze")
     
     @property

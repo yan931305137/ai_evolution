@@ -20,10 +20,10 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from functools import lru_cache
-import logging
+from src.utils.logger import setup_logger
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# 配置日志
+logger = setup_logger(name="SmartExecutor")
 
 
 class ExecutionMode(Enum):

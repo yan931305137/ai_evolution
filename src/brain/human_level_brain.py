@@ -65,8 +65,34 @@ class HumanLevelBrain(BrainOrchestrator):
         """
         super().__init__()
         self.mode = mode
-        # 强制使用基础 provider (coze) 避免循环依赖: Brain -> LLMClient -> HybridBrainClient -> Brain
-        self.llm_client = LLMClient(provider="coze")
+        # 动态确定 provider，但避免循环依赖 (hybrid -> brain -> hybrid)
+        try:
+            import os
+            from src.utils.config import cfg
+            
+            # 获取全局配置的 provider
+            global_provider = os.getenv("LLM_PROVIDER") or cfg.llm_provider or "coze"
+            
+            # 如果全局是 hybrid/brain，则降级为基础 provider
+            if global_provider in ["hybrid", "brain", "human_level_brain"]:
+                # 优先使用 Ark (如果配置了)
+                if os.getenv("VOLC_ACCESSKEY") or os.getenv("ARK_API_KEY"):
+                    effective_provider = "ark"
+                # 其次使用 Coze
+                elif os.getenv("COZE_API_KEY"):
+                    effective_provider = "coze"
+                # 再次 OpenAI
+                elif os.getenv("OPENAI_API_KEY"):
+                    effective_provider = "openai"
+                else:
+                    effective_provider = "coze" # 默认兜底
+            else:
+                effective_provider = global_provider
+        except Exception as e:
+            print(f"⚠️ 无法自动检测 Provider，回退到 coze: {e}")
+            effective_provider = "coze"
+
+        self.llm_client = LLMClient(provider=effective_provider)
         
         # 人类级认知系统
         if self.mode == "full":
