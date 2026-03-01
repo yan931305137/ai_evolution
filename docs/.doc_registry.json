@@ -493,6 +493,95 @@
       "related_files": [],
       "auto_delete": false,
       "last_verified_at": "2026-03-01T06:24:47.627590"
+    },
+    "doc_e508203c": {
+      "doc_id": "doc_e508203c",
+      "path": "docs/FULL_CODE_AUDIT_REPORT.md",
+      "title": "OpenClaw全量代码模块化审计评估报告",
+      "task_id": "task_0bbdf502",
+      "created_at": "2026-03-01T14:25:51.726187",
+      "ttl_days": 7,
+      "status": "active",
+      "doc_type": "analysis",
+      "related_files": [
+        {
+          "path": "src/brain",
+          "hash": ""
+        },
+        {
+          "path": "src/agents",
+          "hash": ""
+        },
+        {
+          "path": "src/skills",
+          "hash": ""
+        },
+        {
+          "path": "src/tools",
+          "hash": ""
+        },
+        {
+          "path": "src/utils",
+          "hash": ""
+        },
+        {
+          "path": "src/core",
+          "hash": ""
+        }
+      ],
+      "auto_delete": true,
+      "last_verified_at": "2026-03-01T14:25:51.726192"
+    },
+    "doc_c8f96dee": {
+      "doc_id": "doc_c8f96dee",
+      "path": "docs/FULL_CODE_AUDIT_REPORT.md",
+      "title": "OpenClaw全量代码模块化审计评估报告",
+      "task_id": "task_0bbdf502",
+      "created_at": "2026-03-01T14:38:19.367616",
+      "ttl_days": 7,
+      "status": "active",
+      "doc_type": "analysis",
+      "related_files": [
+        {
+          "path": "src/brain/orchestrator.py",
+          "hash": "512640fb"
+        },
+        {
+          "path": "src/brain/memory_system/__init__.py",
+          "hash": "03a18198"
+        },
+        {
+          "path": "src/brain/learning_system.py",
+          "hash": "c8fede59"
+        },
+        {
+          "path": "src/brain/decision_system/__init__.py",
+          "hash": "b006ec83"
+        },
+        {
+          "path": "src/brain/value_system/__init__.py",
+          "hash": "962428c0"
+        },
+        {
+          "path": "src/brain/perception_system/__init__.py",
+          "hash": "99fe493b"
+        }
+      ],
+      "auto_delete": true,
+      "last_verified_at": "2026-03-01T14:38:19.367658"
+    },
+    "doc_fdefd3f2": {
+      "doc_id": "doc_fdefd3f2",
+      "path": "docs/FULL_CODE_AUDIT_REPORT.md",
+      "title": "OpenClaw全量代码模块化审计评估报告",
+      "task_id": "task_0bbdf502",
+      "created_at": "2026-03-01T14:52:31.718707",
+      "ttl_days": 7,
+      "status": "active",
+      "doc_type": "analysis",
+      "related_files": [],
+      "auto_delete": true,
+      "last_verified_at": "2026-03-01T14:52:31.718710"
     }
   }
 }

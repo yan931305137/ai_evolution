@@ -243,7 +243,7 @@ class EnhancedLifeCycleManager:
         try:
             result = self.agent.run(task)
             self.enhanced_memory.add_memory(
-                content=f"知识获取: {result}",
+                f"知识获取: {result}",
                 memory_type=MemoryType.KNOWLEDGE,
                 emotional_tag=create_emotional_tag(EmotionType.HAPPINESS, 50.0),
                 source="starvation_response"
@@ -263,7 +263,7 @@ class EnhancedLifeCycleManager:
             
             perception = f"当前目录有{len(files)}个文件/文件夹"
             self.enhanced_memory.add_memory(
-                content=perception,
+                perception,
                 memory_type=MemoryType.EXPERIENCE,
                 emotional_tag=create_emotional_tag(EmotionType.SURPRISE, 20.0),
                 source="environment_perception"
@@ -385,7 +385,7 @@ class EnhancedLifeCycleManager:
                 
                 # 保存到记忆
                 self.enhanced_memory.add_memory(
-                    content=f"任务执行: {task} - {result}",
+                    f"任务执行: {task} - {result}",
                     memory_type=MemoryType.EXPERIENCE,
                     emotional_tag=create_emotional_tag(EmotionType.HAPPINESS, 50.0),
                     source="task_execution",

@@ -215,7 +215,7 @@ class MultimodalPerceptionSystem:
             
             # 保存到记忆
             self.memory.add_memory(
-                content=f"视觉感知: {content}",
+                f"视觉感知: {content}",
                 memory_type=MemoryType.EXPERIENCE,
                 modality=ModalityType.IMAGE,
                 emotional_tag=create_emotional_tag(EmotionType.SURPRISE, confidence),
@@ -294,7 +294,7 @@ class MultimodalPerceptionSystem:
             
             # 保存到记忆
             self.memory.add_memory(
-                content=f"视频感知: {content}",
+                f"视频感知: {content}",
                 memory_type=MemoryType.EXPERIENCE,
                 modality=ModalityType.VIDEO,
                 emotional_tag=create_emotional_tag(EmotionType.SURPRISE, confidence),

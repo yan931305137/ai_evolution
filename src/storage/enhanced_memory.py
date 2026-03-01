@@ -728,12 +728,21 @@ class EnhancedMemorySystem:
 用简洁的JSON数组格式返回，每个元素是一个知识要点字符串。"""
                     
                     response = llm_client.generate([{"role": "user", "content": prompt}])
+                    
+                    # 处理 HybridResponse 或其他响应对象
+                    if hasattr(response, 'content'):
+                        response_text = response.content
+                    elif hasattr(response, 'choices') and response.choices:
+                        response_text = response.choices[0].message.content
+                    else:
+                        response_text = str(response)
+                    
                     # 尝试解析 JSON 响应
                     import json
                     import re
                     
                     # 尝试从响应中提取 JSON 数组
-                    json_match = re.search(r'\[.*\]', response, re.DOTALL)
+                    json_match = re.search(r'\[.*\]', response_text, re.DOTALL)
                     if json_match:
                         extracted = json.loads(json_match.group())
                         if isinstance(extracted, list):
@@ -744,7 +753,7 @@ class EnhancedMemorySystem:
             # 将知识点保存到知识库
             for point in knowledge_points[:5]:  # 最多保存5个
                 self.add_memory(
-                    content=point,
+                    point,  # 作为 content_or_id 位置参数
                     memory_type=MemoryType.KNOWLEDGE,
                     source="consolidation"
                 )
