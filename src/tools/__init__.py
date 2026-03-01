@@ -3,9 +3,12 @@ import inspect
 from src import skills
 
 from .file_tools import list_files, read_file, write_file, move_file, scan_project, register_document, check_documents_status
-from .code_tools import modify_skill, patch_core_code, create_skill, patch_code
+from .code_tools import modify_skill, patch_core_code, create_skill, patch_code, run_linter
 from .system_tools import restart_system, run_command
-from .web_tools import get_weather, web_search, open_browser
+from .web_tools import get_weather, web_search, open_browser, fetch_web_content
+from .interaction_tools import ask_user
+from .memory_tools import remember_insight, recall_knowledge
+from .task_tools import manage_todo
 from .peripheral_tools import (
     mouse_move, mouse_click, mouse_double_click, mouse_drag, 
     key_press, key_release, key_tap, type_text, 
@@ -31,11 +34,19 @@ class Tools:
     # Static methods are now imported from submodules
     modify_skill = staticmethod(modify_skill)
     patch_core_code = staticmethod(patch_core_code)
+    run_linter = staticmethod(run_linter)
     restart_system = staticmethod(restart_system)
     create_skill = staticmethod(create_skill)
     get_weather = staticmethod(get_weather)
     web_search = staticmethod(web_search)
     open_browser = staticmethod(open_browser)
+    fetch_web_content = staticmethod(fetch_web_content)
+    
+    # New Cognitive Tools
+    ask_user = staticmethod(ask_user)
+    remember_insight = staticmethod(remember_insight)
+    recall_knowledge = staticmethod(recall_knowledge)
+    manage_todo = staticmethod(manage_todo)
     # Peripheral tools
     mouse_move = staticmethod(mouse_move)
     mouse_click = staticmethod(mouse_click)
@@ -238,8 +249,16 @@ class Tools:
             # Documentation tools
             "82. update_project_docs(test_results=None, new_features=None): Update README badges and check .gitignore before CI/CD.",
             "83. check_readme_compliance(): Check if README.md meets GitHub standards and return compliance score.",
-            "84. check_gitignore_complete(): Check if .gitignore has all required security rules.",
-            "85. update_readme_badges(test_status='passing', coverage='85%', security='audit passed'): Update README badge status.",
+            "150. check_gitignore_complete(): Check if .gitignore has all required security rules.",
+            "151. update_readme_badges(test_status='passing', coverage='85%', security='audit passed'): Update README badge status.",
+            
+            # Trae-inspired Advanced Tools
+            "152. ask_user(question, options=None): Ask the user for input/confirmation. Use this when ambiguous.",
+            "153. remember_insight(content, tags, importance=3): Save a key insight or rule to long-term memory.",
+            "154. recall_knowledge(query, n_results=5): Search long-term memory for knowledge.",
+            "155. manage_todo(action, task_id=None, description=None, status=None): Manage the project TODO list (add/list/update/remove/clear).",
+            "156. fetch_web_content(url): Read the text content of a webpage (like a browser).",
+            "157. run_linter(file_path): Check a Python file for syntax errors and style issues (flake8).",
         ]
         
         # 2. Dynamic Skills from src.tools.skills

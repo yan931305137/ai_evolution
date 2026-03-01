@@ -120,8 +120,41 @@ class AutoAgent:
             clean_content = json_match.group(0)
         return json.loads(clean_content)
 
+    def _perform_perception(self, goal: str) -> str:
+        """
+        Phase 1: Perception
+        Active information gathering before planning.
+        """
+        console.print("[bold blue]👁️ Perception Phase: Gathering Context...[/bold blue]")
+        perception_context = []
+        
+        # 1. Check current directory structure
+        try:
+            files = Tools.execute_tool("list_files", path=".", recursive=False)
+            perception_context.append(f"Current Directory Layout:\n{files}")
+        except Exception as e:
+            perception_context.append(f"Could not list files: {e}")
+
+        # 2. Check project overview if available
+        try:
+            overview = Tools.execute_tool("get_project_overview")
+            perception_context.append(f"Project Overview:\n{overview}")
+        except:
+            pass
+
+        # 3. Check TODO list (Task Awareness)
+        try:
+            todo_list = Tools.execute_tool("manage_todo", action="list")
+            if "No tasks" not in todo_list:
+                perception_context.append(f"Current Project TODO List:\n{todo_list}")
+                console.print("[dim]Found active TODO list, adding to context...[/dim]")
+        except Exception as e:
+            logger.debug(f"Failed to read TODO list: {e}")
+            
+        return "\n---\n".join(perception_context)
+
     def run(self, goal: str, history: List[Dict[str, str]] = None):
-        """Execute a goal using the ReAct loop with smart optimization."""
+        """Execute a goal using the Trae-inspired Cognitive Loop (Perception-Reasoning-Planning-Action-Verification)."""
         if history is None:
             history = []
         
@@ -177,14 +210,17 @@ class AutoAgent:
             metadata={"escalation": True, "original_mode": smart_result.mode_used.value}
         )
         
-        # 1. Retrieve relevant memories
+        # Phase 1: Perception - Gather context actively
+        perception_info = self._perform_perception(goal)
+        
+        # 1. Retrieve relevant memories (Augmented Perception)
         memory_context = self._retrieve_memory_context(goal)
             
         # 获取用户偏好
         user_preferences = user_profile_manager.extract_preferences_from_history()
         preference_prompt = user_profile_manager.get_preference_prompt(user_preferences)
         
-        # System prompt to define the ReAct behavior
+        # System prompt to define the ReAct behavior with Cognitive Loop
         system_prompt = f"""
 You are an autonomous AI agent capable of using tools to achieve a goal.
 Goal: {goal}
@@ -195,13 +231,23 @@ Goal: {goal}
 Available Tools:
 {self.tools_desc}
 
+COGNITIVE WORKFLOW (STRICTLY FOLLOW THIS):
+1. **PERCEPTION**: Review the "Perception Context" below. Understand where you are and what resources you have.
+2. **REASONING & PLANNING**: Before the first action, analyze the problem and outline a step-by-step plan.
+3. **ACTION**: Execute the next step in your plan.
+4. **VERIFICATION**: After *every* action (especially file editing or commands), you MUST verify the result.
+   - If you wrote a file -> Read it back to check content.
+   - If you ran a command -> Check the exit code and output.
+   - If you fixed a bug -> Run a test case.
+5. **SUMMARY**: When finished, provide a concise summary of what was done and verified.
+
 INSTRUCTIONS:
 1. Break down the goal into small, logical steps.
 2. Use the available tools to inspect the environment and perform actions.
 3. You must output your response in valid JSON format ONLY. No markdown, no extra text.
 4. The JSON structure must be:
 {{
-    "thought": "Your reasoning about what to do next.",
+    "thought": "Your reasoning about what to do next. Mention which phase (Plan/Act/Verify) you are in.",
     "action": "The name of the tool to use (or 'finish' if done).",
     "action_input": {{ "arg_name": "arg_value" }} 
 }}
@@ -265,7 +311,7 @@ EFFICIENT WORKFLOW:
         # Initial conversation state
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Start working on the goal: {goal}"}
+            {"role": "user", "content": f"Start working on the goal: {goal}\n\nPERCEPTION CONTEXT:\n{perception_info}"}
         ]
         
         step_count = 0

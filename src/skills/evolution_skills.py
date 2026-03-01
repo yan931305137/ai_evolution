@@ -173,45 +173,68 @@ def generate_iteration_plan(prioritized_problems: list, max_problems_per_iterati
     selected_problems = prioritized_problems[:max_problems_per_iteration]
     iteration_goal = f"Address {len(selected_problems)} priority issue(s): {'; '.join([p['description'] for p in selected_problems])}"
     
-    tasks = []
-    success_metrics = {}
-    total_expected_impact = 0
+    # Use LLM to generate the actual plan and code
+    from src.utils.llm import LLMClient
+    import json
+    import re
     
-    for idx, problem in enumerate(selected_problems):
-        task_id = f"task_{idx+1}"
-        if problem['problem_type'] == 'runtime_error':
-            tasks.append({
-                "task_id": task_id,
-                "task_description": f"Diagnose and fix error: {problem['description']}",
-                "steps": ["Reproduce the error", "Identify root cause", "Implement fix", "Write test cases", "Verify fix works"]
-            })
-            success_metrics[f"{task_id}_fixed"] = True
-            success_metrics[f"{task_id}_test_passed"] = True
-        elif problem['problem_type'] == 'capability_performance':
-            cap_name = problem['description'].split("'")[1] if "'" in problem['description'] else "unknown_capability"
-            tasks.append({
-                "task_id": task_id,
-                "task_description": f"Optimize capability {cap_name} to improve success rate",
-                "steps": ["Analyze capability implementation", "Identify bottlenecks/failure points", "Implement improvements", "Run existing tests", "Run new edge case tests"]
-            })
-            success_metrics[f"{task_id}_success_rate_improved"] = ">= 90%" if problem['priority'] == 'high' else ">=85%"
-        elif problem['problem_type'] == 'system_performance':
-            tasks.append({
-                "task_id": task_id,
-                "task_description": f"Optimize system performance: {problem['description']}",
-                "steps": ["Profile resource usage", "Identify leak/inefficiency root cause", "Implement optimization", "Verify performance improvement"]
-            })
-            success_metrics[f"{task_id}_metric_improved"] = True
+    llm = LLMClient()
+    
+    prompt = f"""You are an Autonomous AI Evolution Architect.
+Your task is to generate a concrete iteration plan to fix the following identified problems in the system.
+
+PROBLEMS TO FIX:
+{json.dumps(selected_problems, indent=2)}
+
+REQUIREMENTS:
+1. Identify the most relevant file to modify (target_module_path).
+2. Generate the ACTUAL Python code content for that file (modified_code_content). The code must be complete and correct.
+3. Provide smoke test code to verify the fix.
+4. Estimate complexity and cool down time.
+
+OUTPUT FORMAT:
+Return ONLY a valid JSON object with the following structure:
+{{
+    "target_module_path": "path/to/file.py",
+    "modified_code_content": "FULL python code content...",
+    "associated_test_cases": ["tests/test_file.py"],
+    "smoke_test_code": "assert True # validation code",
+    "tasks": [
+        {{"task_description": "step 1...", "expected_impact": "impact..."}}
+    ],
+    "success_metrics": {{"metric_name": "target_value"}},
+    "estimated_complexity": "low/medium/high",
+    "cool_down_minutes": 30
+}}
+"""
+    
+    try:
+        response = llm.generate([{"role": "user", "content": prompt}])
+        content = response.content if hasattr(response, 'content') else str(response)
         
-        total_expected_impact += abs(problem['success_rate_impact'])
-    
-    return {
-        "iteration_goal": iteration_goal,
-        "selected_problems": selected_problems,
-        "tasks": tasks,
-        "success_metrics": success_metrics,
-        "expected_overall_improvement": f"+{round(total_expected_impact * 100, 1)}% overall system reliability"
-    }
+        # Clean JSON
+        clean_content = content.replace("```json", "").replace("```", "").strip()
+        plan_data = json.loads(clean_content)
+        
+        # Merge with generated goal
+        plan_data["iteration_goal"] = iteration_goal
+        plan_data["selected_problems"] = selected_problems
+        
+        return plan_data
+        
+    except Exception as e:
+        print(f"Error generating plan with LLM: {e}")
+        # Fallback to template if LLM fails
+        return {
+            "iteration_goal": iteration_goal,
+            "selected_problems": selected_problems,
+            "target_module_path": "src/tools/skills.py",
+            "modified_code_content": "# Error generating code. Please check logs.",
+            "tasks": [],
+            "success_metrics": {},
+            "estimated_complexity": "high",
+            "cool_down_minutes": 60
+        }
 
 
 def autonomous_iteration_pipeline(

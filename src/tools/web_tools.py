@@ -168,6 +168,21 @@ def web_search(query: str, max_results: int = 5) -> str:
 # 网页内容爬取功能
 # ============================================
 
+def fetch_web_content(url: str) -> str:
+    """
+    Fetch and read the content of a webpage (like a browser).
+    
+    Args:
+        url: The URL to read.
+        
+    Returns:
+        The text content of the page.
+    """
+    content = crawl_webpage(url)
+    if content:
+        return f"Title: {content.title}\nURL: {content.url}\n\n{content.content}"
+    return "Failed to fetch webpage content."
+
 def crawl_webpage(url: str, timeout: int = 30, max_retries: int = 3) -> Optional[WebPageContent]:
     """
     爬取网页内容并分析

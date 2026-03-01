@@ -75,17 +75,26 @@
 ```text
 openclaw/
 ├── src/
-│   ├── agents/              # AI 代理实现 (动态代理, 专家代理)
-│   ├── brain/               # 人类级大脑 (感知, 记忆, 决策, 价值系统)
-│   ├── core/                # 核心组件
-│   ├── skills/              # 技能系统
-│   ├── storage/             # 存储层 (数据库, 增强记忆)
-│   ├── tools/               # 工具集 (计算机操作, 文件, Git, Web等)
-│   └── utils/               # 基础设施 (热重载, 安全扫描, LLM适配)
-├── tests/                   # 测试代码
-├── config/                  # 配置文件
-├── docs/                    # 深度文档
-└── scripts/                 # 脚本工具
+│   ├── agents/              # 代理体系
+│   │   ├── dynamic/         # 动态生成的专家代理
+│   │   ├── agent.py         # 通用自主代理 (AutoAgent)
+│   │   └── orchestrator.py  # 多代理编排器
+│   ├── brain/               # 认知中枢 (Human-Level Brain)
+│   │   ├── attention_system/# 注意力分配机制
+│   │   ├── decision_system/ # 决策制定逻辑
+│   │   ├── memory_system/   # 长期/短期记忆管理
+│   │   ├── value_system/    # 价值观与优先级判断
+│   │   └── self_evolution_system.py # 自主进化引擎
+│   ├── core/                # 核心抽象与基类
+│   ├── skills/              # 可扩展技能库
+│   ├── storage/             # 数据持久化 (ChromaDB, SQLite)
+│   ├── tools/               # 20+ 内置工具 (CLI, Git, Web, etc.)
+│   └── utils/               # 通用工具库 (热重载, 安全沙箱)
+├── config/                  # 系统配置 (YAML/JSON)
+├── data/                    # 运行时数据与状态
+├── docs/                    # 设计文档与架构说明
+├── scripts/                 # 运维与测试脚本
+└── tests/                   # 单元与集成测试
 ```
 
 ---
@@ -233,6 +242,20 @@ openclaw config set evolution.cicd.auto_trigger true
 - ✅ **依赖扫描**: 确保依赖包安全
 
 详细安全文档: [docs/GITHUB_CICD_SECURITY.md](docs/GITHUB_CICD_SECURITY.md)
+
+---
+
+## 📅 开发路线图 (Roadmap)
+
+我们正在持续进化 OpenClaw 的核心能力。以下是近期的重点开发计划：
+
+- [ ] **语义记忆升级**: 引入轻量级本地向量模型 (BGE/BERT)，替换现有的哈希嵌入，大幅提升记忆检索准确率。
+- [ ] **多模态融合**: 扩展记忆系统以支持图像和视频数据的向量化存储与检索。
+- [ ] **安全沙箱增强**: 从基于正则的静态检查升级为基于 AST 的深度分析，并在非 Linux 环境引入 Docker 隔离。
+- [ ] **专家代理自文档化**: 实现动态生成代理的自动文档生成，确保进化过程可追溯。
+- [ ] **知识库集成**: 探索与 Wikipedia、StackOverflow 等外部知识库的深度整合。
+
+查看详细任务列表: [TODO.md](TODO.md)
 
 ---
 

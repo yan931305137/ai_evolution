@@ -230,6 +230,54 @@ def patch_core_code(file_path: str, new_content: str, test_code: str) -> str:
     # 2. Proceed with modification using CodeEditor
     return CodeEditor.safe_patch_core(file_path, new_content, test_code)
 
+import os
+import logging
+import ast
+import subprocess
+from typing import Optional, Dict, Any
+
+def run_linter(file_path: str) -> str:
+    """
+    Run static analysis (syntax check + optional linter) on a file.
+    
+    Args:
+        file_path: Path to the python file.
+        
+    Returns:
+        Analysis report.
+    """
+    if not os.path.exists(file_path):
+        return f"Error: File {file_path} not found."
+        
+    report = []
+    
+    # 1. Syntax Check (AST)
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            source = f.read()
+        ast.parse(source)
+        report.append("✅ Syntax Check: PASSED")
+    except SyntaxError as e:
+        return f"❌ Syntax Error:\nLine {e.lineno}: {e.msg}\n{e.text}"
+    except Exception as e:
+        return f"❌ Error reading file: {e}"
+
+    # 2. Flake8 (if available)
+    try:
+        result = subprocess.run(
+            ['flake8', file_path, '--count', '--select=E9,F63,F7,F82', '--show-source', '--statistics'],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode == 0:
+             report.append("✅ Flake8 Check: PASSED")
+        else:
+             report.append(f"⚠️ Flake8 Issues:\n{result.stdout}")
+    except FileNotFoundError:
+        report.append("ℹ️ Flake8 not installed (skipping style check)")
+
+    return "\n\n".join(report)
+
 def create_skill(name: str, code: str, description: str) -> str:
     """
     Create a new Python skill (function) and save it to the skills library.
